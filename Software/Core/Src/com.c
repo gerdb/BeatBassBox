@@ -21,6 +21,7 @@
  */
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
+#include "console.h"
 #include "com.h"
 
 /* Variables -----------------------------------------------------------------*/
@@ -35,6 +36,9 @@ int com_iTxTdPtr = 0;
 uint8_t com_au8RxBuffer[COM_RX_SIZE];
 int com_iRxWrPtr = 0;
 int com_iRxRdPtr = 0;
+/* Static function prototypes--------------------------------------------------*/
+static void COM_Receive(void);
+static void COM_Transmit(void);
 
 /* Functions ------------------------------------------------------------------*/
 /**
@@ -43,6 +47,7 @@ int com_iRxRdPtr = 0;
  */
 void COM_Init(void)
 {
+	SET_BIT(HCOM.Instance->CR1, USART_CR1_RXNEIE);
 }
 
 /**
@@ -60,7 +65,7 @@ void COM_RxBufferTask(void)
 		com_iRxRdPtr &= COM_RX_MASK;
 
 		//Decode the received byte
-		//USARTL2_Decode(COM_rx_buffer[COM_rx_rd_pointer]);
+		CONSOLE_NewChar(com_au8RxBuffer[com_iRxRdPtr]);
 	}
 }
 
@@ -93,8 +98,6 @@ void COM_PutByte(uint8_t b)
 	{
 		// Write the first byte directly into the USART
 		com_bTxEn = 1;
-		//USART_SendData(USART2, b);
-		//USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
 		HCOM.Instance->TDR = (uint16_t) b;
 		SET_BIT(HCOM.Instance->CR1, USART_CR1_TXEIE);
 
@@ -117,43 +120,112 @@ void COM_PutByte(uint8_t b)
 }
 
 /**
- * USART2 Interrupt handler
+ * Transmit a character
+ */
+static void COM_Transmit(void)
+{
+	//Increment the read pointer of the RX buffer
+	if (com_iTxWrPtr != com_iTxTdPtr)
+	{
+		com_iTxTdPtr++;
+		com_iTxTdPtr &= COM_TX_MASK;
+		//send the next byte
+		HCOM.Instance->TDR = (uint16_t) com_au8TxBuffer[com_iTxTdPtr];
+	}
+	else
+	{
+		// This was the last byte to send, disable the transmission.
+		CLEAR_BIT(HCOM.Instance->CR1, USART_CR1_TXEIE);
+		com_bTxEn = 0;
+	}
+}
+
+/**
+ * Receive a character
+ */
+static void COM_Receive(void)
+{
+	// Increment the buffer pointer, if it's possible
+	com_iRxWrPtr++;
+	com_iRxWrPtr &= COM_RX_MASK;
+	if (com_iRxWrPtr == com_iRxRdPtr)
+	{
+		com_iRxWrPtr--;
+		com_iRxWrPtr &= COM_RX_MASK;
+	}
+
+	// Write the received byte and the time difference into the buffer
+	com_au8RxBuffer[com_iRxWrPtr] = (uint8_t) (HCOM.Instance->RDR);
+}
+
+/**
+ * USART Interrupt handler
  */
 __INLINE void COM_ISR(void)
 {
+	uint32_t tmp1 = 0, tmp2 = 0;
 
-	// Receive interrupt
-	if ((READ_REG(HCOM.Instance->ISR) & USART_ISR_RXNE) != 0)
+	tmp1 = __HAL_UART_GET_FLAG(&HCOM, UART_FLAG_PE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(&HCOM, UART_IT_PE);
+	/* UART parity error interrupt occurred ------------------------------------*/
+	if ((tmp1 != RESET) && (tmp2 != RESET))
 	{
-		// Increment the buffer pointer, if it's possible
-		com_iRxWrPtr++;
-		com_iRxWrPtr &= COM_RX_MASK;
-		if (com_iRxWrPtr == com_iRxRdPtr)
-		{
-			com_iRxWrPtr--;
-			com_iRxWrPtr &= COM_RX_MASK;
-		}
+		__HAL_UART_CLEAR_FLAG(&HCOM, UART_FLAG_PE);
 
-		// Write the received byte and the time difference into the buffer
-		com_au8RxBuffer[com_iRxWrPtr] = (uint8_t) (HCOM.Instance->RDR);
+		HCOM.ErrorCode |= HAL_UART_ERROR_PE;
 	}
 
-	// Transmit interrupt
-	if ((READ_REG(HCOM.Instance->ISR) & USART_ISR_TXE) != 0)
+	tmp1 = __HAL_UART_GET_FLAG(&HCOM, UART_FLAG_FE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(&HCOM, UART_IT_ERR);
+	/* UART frame error interrupt occurred -------------------------------------*/
+	if ((tmp1 != RESET) && (tmp2 != RESET))
 	{
-		//Increment the read pointer of the RX buffer
-		if (com_iTxWrPtr != com_iTxTdPtr)
-		{
-			com_iTxTdPtr++;
-			com_iTxTdPtr &= COM_TX_MASK;
-			//send the next byte
-			HCOM.Instance->TDR = (uint16_t) com_au8TxBuffer[com_iTxTdPtr];
-		}
-		else
-		{
-			// This was the last byte to send, disable the transmission.
-			CLEAR_BIT(HCOM.Instance->CR1, USART_CR1_TXEIE);
-			com_bTxEn = 0;
-		}
+		__HAL_UART_CLEAR_FLAG(&HCOM, UART_FLAG_FE);
+
+		HCOM.ErrorCode |= HAL_UART_ERROR_FE;
 	}
+
+	tmp1 = __HAL_UART_GET_FLAG(&HCOM, UART_FLAG_NE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(&HCOM, UART_IT_ERR);
+	/* UART noise error interrupt occurred -------------------------------------*/
+	if ((tmp1 != RESET) && (tmp2 != RESET))
+	{
+		__HAL_UART_CLEAR_FLAG(&HCOM, UART_FLAG_NE);
+
+		HCOM.ErrorCode |= HAL_UART_ERROR_NE;
+	}
+
+	tmp1 = __HAL_UART_GET_FLAG(&HCOM, UART_FLAG_ORE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(&HCOM, UART_IT_ERR);
+	/* UART Over-Run interrupt occurred ----------------------------------------*/
+	if (tmp1 != RESET)
+	{
+		__HAL_UART_CLEAR_FLAG(&HCOM, UART_FLAG_ORE);
+
+		HCOM.ErrorCode |= HAL_UART_ERROR_ORE;
+	}
+
+	tmp1 = __HAL_UART_GET_FLAG(&HCOM, UART_FLAG_RXNE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(&HCOM, UART_IT_RXNE);
+	/* UART in mode Receiver ---------------------------------------------------*/
+	if ((tmp1 != RESET) && (tmp2 != RESET))
+	{
+		COM_Receive();
+		__HAL_UART_CLEAR_FLAG(&HCOM, UART_FLAG_RXNE);
+	}
+
+	tmp1 = __HAL_UART_GET_FLAG(&HCOM, UART_FLAG_TXE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(&HCOM, UART_IT_TXE);
+	/* UART in mode Transmitter ------------------------------------------------*/
+	if ((tmp1 != RESET) && (tmp2 != RESET))
+	{
+		COM_Transmit();
+		__HAL_UART_CLEAR_FLAG(&HCOM, UART_FLAG_TXE);
+	}
+
+	if (HCOM.ErrorCode != HAL_UART_ERROR_NONE)
+	{
+		/* Set the UART state ready to be able to start again the process */
+	}
+
 }

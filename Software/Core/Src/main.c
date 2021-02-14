@@ -30,7 +30,7 @@
 /* USER CODE BEGIN Includes */
 #include "frqdetect.h"
 #include "com.h"
-#include "printf.h"
+#include "console.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -100,8 +100,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   FRQDETECT_Init();
   COM_Init();
+  CONSOLE_Init();
 
-  PRINTF_printf("Hallo %d", 42);
   /* USER CODE END 2 */
 
   /* Infinite loop */
