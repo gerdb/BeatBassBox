@@ -27,7 +27,7 @@
 #include "adc.h"
 
 /* Variables -----------------------------------------------------------------*/
-__IO uint16_t frqd_au16ADCValues[32] = {0};
+FRQDETECT_1632_u frqd_u1632ADCValues[16] = {0};
 
 /* Prototypes of static function ---------------------------------------------*/
 
@@ -44,7 +44,7 @@ void FRQDETECT_Init()
 {
 	// Workaround. See ERRATA. It is necessary to switch on the DAC clock
 	__HAL_RCC_DAC_CLK_ENABLE();
-	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) frqd_au16ADCValues, 32);
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) frqd_u1632ADCValues, 32);
 	HAL_TIM_Base_Start(&htim5);
 }
 
@@ -69,7 +69,7 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
   /* Prevent unused argument(s) compilation warning */
   UNUSED(hadc);
   //int i;
-  frqd_au16ADCValues[0]++;
+  frqd_u1632ADCValues[0].u16_0++;
 //  for (i=0; i< 160; i++)
 //	  MEASUREMENT_NewSample((int)ADCConvertedValue[i]);
 }
@@ -84,7 +84,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
   /* Prevent unused argument(s) compilation warning */
   UNUSED(hadc);
-  frqd_au16ADCValues[0]++;
+  frqd_u1632ADCValues[0].u16_0++;
 //  for (i=160; i< 320; i++)
 //	  MEASUREMENT_NewSample((int)ADCConvertedValue[i]);
 

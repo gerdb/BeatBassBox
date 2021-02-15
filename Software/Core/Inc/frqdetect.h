@@ -26,18 +26,23 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-
 /* Constants  ----------------------------------------------------------------*/
-
-
 
 /* Types ---------------------------------------------------------------------*/
 
-
+// Union for u16 and u32 access
+typedef union
+{
+	struct
+	{
+		uint16_t u16_0;
+		uint16_t u16_1;
+	};
+	uint32_t u32;
+} FRQDETECT_1632_u;
 
 /* Function prototypes  ------------------------------------------------------*/
 void FRQDETECT_Init();
 void FRQDETECT_Task1ms();
-
 
 #endif /* __FRQDETECT_H__ */
