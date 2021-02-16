@@ -41,6 +41,12 @@ typedef union
 	uint32_t u32;
 } FRQDETECT_1632_u;
 
+typedef union
+{
+	uint16_t u16[8];
+	uint32_t u32[4];
+} FRQD_blockbuf_t;
+
 /* Function prototypes  ------------------------------------------------------*/
 void FRQDETECT_Init();
 void FRQDETECT_Task1ms();

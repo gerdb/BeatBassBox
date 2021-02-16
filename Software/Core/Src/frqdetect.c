@@ -25,11 +25,21 @@
 #include "frqdetect.h"
 #include "tim.h"
 #include "adc.h"
+#include "dac.h"
+#include <string.h>
 
 /* Variables -----------------------------------------------------------------*/
-FRQDETECT_1632_u frqd_u1632ADCValues[16] = {0};
+//FRQDETECT_1632_u frqd_u1632ADCValues[16] = {0};
+
+uint32_t frqd_u32ADCDMABuff[8];
+
+int frqd_iWrPtr;
+int frqd_iRdPtr;
+FRQD_blockbuf_t frqd_uBlockBuf[4];
+
 
 /* Prototypes of static function ---------------------------------------------*/
+static void FRQDETECT_Process(uint16_t ui16Sample);
 
 
 /* Functions -----------------------------------------------------------------*/
@@ -42,20 +52,44 @@ FRQDETECT_1632_u frqd_u1632ADCValues[16] = {0};
  */
 void FRQDETECT_Init()
 {
+	frqd_iWrPtr = 0;
+	frqd_iRdPtr = 0;
+
 	// Workaround. See ERRATA. It is necessary to switch on the DAC clock
 	__HAL_RCC_DAC_CLK_ENABLE();
-	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) frqd_u1632ADCValues, 32);
+	HAL_ADC_Start_DMA(&hadc1, frqd_u32ADCDMABuff, 16);
 	HAL_TIM_Base_Start(&htim5);
+}
+
+/**
+ * Processes on sample
+ *
+ * \param ui16Sample 16 (12-bit) ADC value from 0..0x0FFF
+ *
+ */
+
+static void FRQDETECT_Process(uint16_t ui16Sample)
+{
+	HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, ui16Sample);
 }
 
 /**
  * Call this function every 1ms from main
  *
- * It starts the creation of the action tabled triggered from the ISR
+ * It processes on (or more) blocks
  *
  */
 void FRQDETECT_Task1ms()
 {
+	while (frqd_iRdPtr != frqd_iWrPtr)
+	{
+		for (int i=0;i<8;i++)
+		{
+			FRQDETECT_Process(frqd_uBlockBuf[frqd_iRdPtr].u16[i]);
+		}
+		frqd_iRdPtr++;
+		frqd_iRdPtr &= 0x03;
+	}
 }
 
 /**
@@ -68,10 +102,9 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 {
   /* Prevent unused argument(s) compilation warning */
   UNUSED(hadc);
-  //int i;
-  frqd_u1632ADCValues[0].u16_0++;
-//  for (i=0; i< 160; i++)
-//	  MEASUREMENT_NewSample((int)ADCConvertedValue[i]);
+  memcpy(&frqd_uBlockBuf[frqd_iWrPtr],&frqd_u32ADCDMABuff[0], 16);
+  frqd_iWrPtr++;
+  frqd_iWrPtr &= 0x03;
 }
 
 /**
@@ -83,10 +116,8 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
   /* Prevent unused argument(s) compilation warning */
-  UNUSED(hadc);
-  frqd_u1632ADCValues[0].u16_0++;
-//  for (i=160; i< 320; i++)
-//	  MEASUREMENT_NewSample((int)ADCConvertedValue[i]);
-
+  memcpy(&frqd_uBlockBuf[frqd_iWrPtr],&frqd_u32ADCDMABuff[4], 16);
+  frqd_iWrPtr++;
+  frqd_iWrPtr &= 0x03;
 }
 

@@ -20,6 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "dac.h"
 #include "dma.h"
 #include "tim.h"
 #include "usart.h"
@@ -97,6 +98,7 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_ADC1_Init();
   MX_TIM5_Init();
+  MX_DAC_Init();
   /* USER CODE BEGIN 2 */
   FRQDETECT_Init();
   COM_Init();
