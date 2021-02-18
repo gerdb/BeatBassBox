@@ -29,17 +29,25 @@
 #include <string.h>
 
 /* Variables -----------------------------------------------------------------*/
-//FRQDETECT_1632_u frqd_u1632ADCValues[16] = {0};
-
 uint32_t frqd_u32ADCDMABuff[8];
 
 int frqd_iWrPtr;
 int frqd_iRdPtr;
 FRQD_blockbuf_t frqd_uBlockBuf[4];
-
+float frqd_fFiltF;
+float frqd_fFiltD;
+float frqd_fFiltZ1;
+float frqd_fFiltZ2;
+float frqd_fFiltHPLP;
+float frqd_fFiltHP;
+float frqd_fEnvPos;
+float frqd_fEnvNeg;
+int frqd_iPulse;
+int frqd_iPerCnt;
+int frqd_iPer;
 
 /* Prototypes of static function ---------------------------------------------*/
-static void FRQDETECT_Process(uint16_t ui16Sample);
+__STATIC_INLINE void FRQDETECT_Process(uint16_t ui16Sample);
 
 
 /* Functions -----------------------------------------------------------------*/
@@ -55,8 +63,13 @@ void FRQDETECT_Init()
 	frqd_iWrPtr = 0;
 	frqd_iRdPtr = 0;
 
+	frqd_fFiltF = 0.178f;
+	frqd_fFiltD = 0.5f;
+
 	// Workaround. See ERRATA. It is necessary to switch on the DAC clock
 	__HAL_RCC_DAC_CLK_ENABLE();
+	HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
+
 	HAL_ADC_Start_DMA(&hadc1, frqd_u32ADCDMABuff, 16);
 	HAL_TIM_Base_Start(&htim5);
 }
@@ -68,9 +81,69 @@ void FRQDETECT_Init()
  *
  */
 
-static void FRQDETECT_Process(uint16_t ui16Sample)
+__STATIC_INLINE void FRQDETECT_Process(uint16_t ui16Sample)
 {
-	HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, ui16Sample);
+	// High pass to remove DC
+	frqd_fFiltHP = ui16Sample - frqd_fFiltHPLP;
+	frqd_fFiltHPLP += frqd_fFiltHP * 0.0002f;
+
+	// Lowpass (bandpass)
+	frqd_fFiltZ2 += frqd_fFiltF * frqd_fFiltZ1;
+	frqd_fFiltZ1 += frqd_fFiltF * (frqd_fFiltHP - frqd_fFiltZ1 * frqd_fFiltD - frqd_fFiltZ2);
+
+
+	// Positive envelope
+	if (frqd_fFiltZ2 > frqd_fEnvPos)
+	{
+		frqd_fEnvPos = frqd_fFiltZ2;
+	}
+	else
+	{
+		frqd_fEnvPos -= frqd_fEnvPos * 0.005f;
+	}
+
+	// Negative envelope
+	if (frqd_fFiltZ2 < frqd_fEnvNeg)
+	{
+		frqd_fEnvNeg = frqd_fFiltZ2;
+	}
+	else
+	{
+		frqd_fEnvNeg -= frqd_fEnvNeg * 0.005f;
+	}
+
+	// Schmitttrigger
+	if (frqd_fFiltZ2 > frqd_fEnvPos*0.8f)
+	{
+		// Rising edge
+		if (frqd_iPulse == 0)
+		{
+			// Count the period
+			if (frqd_iPerCnt < FRQD_MAXPER)
+			{
+				frqd_iPer = frqd_iPerCnt;
+			}
+			frqd_iPerCnt = 0;
+		}
+		frqd_iPulse = 1;
+	}
+	if (frqd_fFiltZ2 < frqd_fEnvNeg*0.8f)
+	{
+		frqd_iPulse = 0;
+	}
+
+	// Limit to 16Hz
+	if (frqd_iPerCnt < FRQD_MAXPER)
+	{
+		frqd_iPerCnt++;
+	}
+	else
+	{
+		frqd_iPer = 0;
+	}
+
+
+	HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, frqd_iPer * 16);
 }
 
 /**

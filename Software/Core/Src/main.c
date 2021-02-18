@@ -114,7 +114,7 @@ int main(void)
 	  {
 		  bTick1ms = 0;
 	  	  FRQDETECT_Task1ms();
-	  	  COM_RxBufferTask();
+	  	  //COM_RxBufferTask();
 	  }
     /* USER CODE END WHILE */
 
