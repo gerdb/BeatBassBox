@@ -52,6 +52,8 @@
 
 /* USER CODE BEGIN PV */
 int bTick1ms;
+int iCntTask10ms;
+int iCntTask100ms;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -112,9 +114,35 @@ int main(void)
   {
 	  if (bTick1ms)
 	  {
+		  // 1ms Tasks
+  		  FRQDETECT_Task1ms();
+	  	  COM_RxBufferTask();
+
+	  	  // 10ms Tasks. Use values of 0..8 (9 is for 100ms tasks)
+	  	  if (iCntTask10ms == 1)
+	  	  {
+//	  		FRQDETECT_Task10ms();
+	  	  }
+
+
+	  	  // 100ms Tasks. Use values of 90..99
+	  	  if (iCntTask100ms == 90)
+	  	  {
+	  		FRQDETECT_Task100ms();
+	  	  }
+
+	  	  // Count the 10ms and 100ms Task
 		  bTick1ms = 0;
-	  	  FRQDETECT_Task1ms();
-	  	  //COM_RxBufferTask();
+	  	  iCntTask10ms++;
+	  	  iCntTask100ms++;
+  		  if (iCntTask10ms == 10)
+  		  {
+  			iCntTask10ms = 0;
+  		  }
+  		  if (iCntTask100ms == 100)
+  		  {
+  			iCntTask100ms = 0;
+  		  }
 	  }
     /* USER CODE END WHILE */
 

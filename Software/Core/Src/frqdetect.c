@@ -23,6 +23,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "frqdetect.h"
+#include "printf.h"
 #include "tim.h"
 #include "adc.h"
 #include "dac.h"
@@ -42,9 +43,15 @@ float frqd_fFiltHPLP;
 float frqd_fFiltHP;
 float frqd_fEnvPos;
 float frqd_fEnvNeg;
+float frqd_fEnvThresh;
+float frqd_fEnvDecay;
 int frqd_iPulse;
 int frqd_iPerCnt;
 int frqd_iPer;
+int frqd_iDebug;
+int frqd_iAmpl;
+int frqd_iAmplMax;
+int frqd_iMinAmpl;
 
 /* Prototypes of static function ---------------------------------------------*/
 __STATIC_INLINE void FRQDETECT_Process(uint16_t ui16Sample);
@@ -63,8 +70,16 @@ void FRQDETECT_Init()
 	frqd_iWrPtr = 0;
 	frqd_iRdPtr = 0;
 
-	frqd_fFiltF = 0.178f;
+	frqd_fFiltF = 500.0f * FRQD_2PIOVERF;
 	frqd_fFiltD = 0.5f;
+
+	// Minimal amplitude to measure the frequency
+	frqd_iMinAmpl = 100.0f;
+	// Envelop threshold
+	frqd_fEnvThresh = 0.8f;
+	// Envelop decay
+	frqd_fEnvDecay = 0.005f;
+
 
 	// Workaround. See ERRATA. It is necessary to switch on the DAC clock
 	__HAL_RCC_DAC_CLK_ENABLE();
@@ -73,6 +88,106 @@ void FRQDETECT_Init()
 	HAL_ADC_Start_DMA(&hadc1, frqd_u32ADCDMABuff, 16);
 	HAL_TIM_Base_Start(&htim5);
 }
+
+/**
+ * Returns true if frequency is valid
+ *
+ * \return true if frequency is valid
+ *
+ */
+int FRQDETECT_IsValid()
+{
+	return frqd_iPer != 0;
+}
+
+
+/**
+ * Returns the current frequency or 0.0f if no frequency is available
+ *
+ * \return frequency in Hz
+ *
+ */
+float FRQDETECT_GetFrequency()
+{
+	if (frqd_iPer == 0)
+	{
+		return 0.0f;
+	}
+
+	return FRQD_SAMPLE_FRQ / frqd_iPer;
+}
+
+/**
+ * Returns the current frequency or 0.0f if no frequency is available
+ *
+ * \param iDebug 1 to switch on debug mode
+ *
+ */
+void FRQDETECT_SetDebug(int iDebug)
+{
+	frqd_iDebug = iDebug;
+}
+
+/**
+ * Sets the frequency and damping of the 2nd order lowpass
+ *
+ * \param iFrq the frequency in Hz
+ * \param iDamp the damping in %
+ *
+ */
+void FRQDETECT_SetFilter(int iFrq, int iDamp)
+{
+	frqd_fFiltF = ((float)iFrq) * FRQD_2PIOVERF;
+	frqd_fFiltD = ((float)iDamp)*0.01f;
+}
+
+/**
+ * Sets the detection parameters
+ *
+ * \param iMinAmpl the minimal amplitude to use the detected period
+ * \param iEnvThresh the envelope threshold in %
+ * \param iEnvDecay the envelope decay in ms
+ *
+ */
+void FRQDETECT_SetDetection(int iMinAmpl, int iEnvThresh, int iEnvDecay)
+{
+	frqd_iMinAmpl = ((float)iMinAmpl) *4096.0f / 3000.0f;
+	frqd_fEnvThresh = ((float)iEnvThresh) / 100.0f;
+	if (iEnvDecay != 0)
+	{
+		frqd_fEnvDecay = 1.0f / (((float)iEnvDecay) / 1000.0f * FRQD_SAMPLE_FRQ);
+	}
+	else
+	{
+		frqd_fEnvDecay = 0.0f;
+	}
+}
+
+/**
+ * Print the filter settings
+ *
+ */
+void FRQDETECT_PrintFilter()
+{
+	PRINTF_printf("%d(Hz), %d(%%)\r\n",
+			(int)(frqd_fFiltF * FRQD_FOVER2PI),
+			(int)(frqd_fFiltD * 100.0f)
+			);
+}
+/**
+ * Print the detection settings
+ *
+ */
+void FRQDETECT_PrintDetection()
+{
+	PRINTF_printf("%d(mV), %d(%%), %d(ms)\r\n",
+			(int)(frqd_iMinAmpl * 3000.0f / 4096.0f),
+			(int)(frqd_fEnvThresh * 100.0f),
+			(int)(1000.0f / FRQD_SAMPLE_FRQ / frqd_fEnvDecay)
+			);
+}
+
+
 
 /**
  * Processes on sample
@@ -96,24 +211,26 @@ __STATIC_INLINE void FRQDETECT_Process(uint16_t ui16Sample)
 	if (frqd_fFiltZ2 > frqd_fEnvPos)
 	{
 		frqd_fEnvPos = frqd_fFiltZ2;
+		frqd_iAmpl = frqd_fEnvPos - frqd_fEnvNeg;
 	}
 	else
 	{
-		frqd_fEnvPos -= frqd_fEnvPos * 0.005f;
+		frqd_fEnvPos -= frqd_fEnvPos * frqd_fEnvDecay;
 	}
 
 	// Negative envelope
 	if (frqd_fFiltZ2 < frqd_fEnvNeg)
 	{
 		frqd_fEnvNeg = frqd_fFiltZ2;
+		frqd_iAmpl = frqd_fEnvPos - frqd_fEnvNeg;
 	}
 	else
 	{
-		frqd_fEnvNeg -= frqd_fEnvNeg * 0.005f;
+		frqd_fEnvNeg -= frqd_fEnvNeg * frqd_fEnvDecay;
 	}
 
 	// Schmitttrigger
-	if (frqd_fFiltZ2 > frqd_fEnvPos*0.8f)
+	if (frqd_fFiltZ2 > frqd_fEnvPos * frqd_fEnvThresh)
 	{
 		// Rising edge
 		if (frqd_iPulse == 0)
@@ -121,13 +238,21 @@ __STATIC_INLINE void FRQDETECT_Process(uint16_t ui16Sample)
 			// Count the period
 			if (frqd_iPerCnt < FRQD_MAXPER)
 			{
-				frqd_iPer = frqd_iPerCnt;
+				// Amplitude large enough?
+				if (frqd_iAmpl > frqd_iMinAmpl)
+				{
+					frqd_iPer = frqd_iPerCnt;
+				}
+				else
+				{
+					frqd_iPer = 0;
+				}
 			}
 			frqd_iPerCnt = 0;
 		}
 		frqd_iPulse = 1;
 	}
-	if (frqd_fFiltZ2 < frqd_fEnvNeg*0.8f)
+	if (frqd_fFiltZ2 < frqd_fEnvNeg * frqd_fEnvThresh)
 	{
 		frqd_iPulse = 0;
 	}
@@ -162,6 +287,34 @@ void FRQDETECT_Task1ms()
 		}
 		frqd_iRdPtr++;
 		frqd_iRdPtr &= 0x03;
+	}
+
+	if (frqd_iDebug)
+	{
+		// Get the peak value of the amplitude
+		if (frqd_iAmpl > frqd_iAmplMax)
+		{
+			frqd_iAmplMax = frqd_iAmpl;
+		}
+	}
+
+}
+
+/**
+ * Call this function every 1ms from main
+ *
+ * It processes on (or more) blocks
+ *
+ */
+void FRQDETECT_Task100ms()
+{
+	if (frqd_iDebug)
+	{
+		if (FRQDETECT_IsValid())
+		{
+			PRINTF_printf("%dHz %d\r\n",(int)FRQDETECT_GetFrequency(),(100 * frqd_iAmplMax)/4096);
+			frqd_iAmplMax = 0;
+		}
 	}
 }
 

@@ -70,11 +70,57 @@ static int CONSOLE_IsCmd(char *cmd)
  */
 static int CONSOLE_ProcessCmd(void)
 {
-	if (CONSOLE_IsCmd("SERVO_SET"))
+	if (CONSOLE_IsCmd("SERVO.SET"))
 	{
 		if (console_iPars == 2)
 		{
 			//SERVO_Set(console_as32Pars[0],console_as32Pars[1]);
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
+	else if (CONSOLE_IsCmd("FRQD.DEBUG"))
+	{
+		if (console_iPars < 2)
+		{
+			FRQDETECT_SetDebug(console_as32Pars[0]);
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
+	else if (CONSOLE_IsCmd("FRQD.FILTER"))
+	{
+		if (console_iPars == 0)
+		{
+			FRQDETECT_PrintFilter();
+		}
+		else if (console_iPars == 2)
+		{
+			FRQDETECT_SetFilter(
+					console_as32Pars[0],
+					console_as32Pars[1]);
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
+	else if (CONSOLE_IsCmd("FRQD.DETECTION"))
+	{
+		if (console_iPars == 0)
+		{
+			FRQDETECT_PrintDetection();
+		}
+		else if (console_iPars == 3)
+		{
+			FRQDETECT_SetDetection(
+					console_as32Pars[0],
+					console_as32Pars[1],
+					console_as32Pars[2]);
 		}
 		else
 		{
@@ -95,13 +141,13 @@ static int CONSOLE_ProcessCmd(void)
 static void CONSOLE_ProcessLine(void)
 {
 	int bIsCmd = 1;
+	int bSepFound = 0;
 	int iError = CONSOLE_NO_ERROR;
 	char c;
+	int iParIndex = -1;
 
 	console_iCmdLen = 0;
 	console_iPars = 0;
-	console_as32Pars[0] = 0;
-	console_as32Signs[0] = 1;
 
 	for (int i = 0; i < console_iLinePtr && (iError == CONSOLE_NO_ERROR); i++)
 	{
@@ -111,6 +157,7 @@ static void CONSOLE_ProcessLine(void)
 			if (c == ' ')
 			{
 				bIsCmd = 0;
+				bSepFound = 1;
 			}
 			else
 			{
@@ -126,33 +173,51 @@ static void CONSOLE_ProcessLine(void)
 		}
 		else
 		{
-			if (c == ' ' || c == '\r' || c == '\n')
+
+			if (c == '\r' || c == '\n')
 			{
 				// ignore it;
 			}
-			else if (c == ',')
+			else if (c == ' ' || c == ',')
 			{
-				if (console_iPars < (CONSOLE_PARAMETERS - 1))
-				{
-					console_iPars++;
-					console_as32Pars[console_iPars] = 0;
-					console_as32Signs[console_iPars] = 1;
-				}
-				else
-				{
-					iError = CONSOLE_ERROR_TO_MANY_PARS;
-				}
+				bSepFound = 1;
 			}
 			else
 			{
-				if (c >= '0' && c <= '9')
+				if ((c >= '0' && c <= '9') || c == '-' || c == '+')
 				{
-					console_as32Pars[console_iPars] *= 10;
-					console_as32Pars[console_iPars] += c - '0';
-				}
-				else if (c == '-')
-				{
-					console_as32Signs[console_iPars] = -1;
+					if (bSepFound)
+					{
+						bSepFound = 0;
+						if (iParIndex < (CONSOLE_PARAMETERS - 1))
+						{
+							iParIndex++;
+							console_iPars = iParIndex + 1;
+							console_as32Pars[iParIndex] = 0;
+							console_as32Signs[iParIndex] = 1;
+						}
+						else
+						{
+							iError = CONSOLE_ERROR_TO_MANY_PARS;
+						}
+
+					}
+					if (iParIndex >= 0)
+					{
+						if (c >= '0' && c <= '9')
+						{
+							console_as32Pars[iParIndex] *= 10;
+							console_as32Pars[iParIndex] += c - '0';
+						}
+						else if (c == '-')
+						{
+							console_as32Signs[iParIndex] = -1;
+						}
+					}
+					else
+					{
+						iError = CONSOLE_ERROR_PAR;
+					}
 				}
 				else
 				{
@@ -162,7 +227,6 @@ static void CONSOLE_ProcessLine(void)
 		}
 	}
 
-	console_iPars++;
 
 	for (int i = 0; i < CONSOLE_PARAMETERS; i++)
 	{
@@ -174,13 +238,13 @@ static void CONSOLE_ProcessLine(void)
 		iError = CONSOLE_ERROR_CMD;
 	}
 
-	PRINTF_printf(" - ");
+	PRINTF_printf(" ");
 	if (iError == CONSOLE_NO_ERROR)
 	{
 		iError = CONSOLE_ProcessCmd();
 		if (iError == CONSOLE_NO_ERROR)
 		{
-			PRINTF_printf("ok");
+			// do nothing
 		}
 		else if (iError == CONSOLE_ERROR_PAR_COUNT)
 		{
