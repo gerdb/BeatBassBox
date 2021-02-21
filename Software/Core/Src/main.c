@@ -22,6 +22,7 @@
 #include "adc.h"
 #include "dac.h"
 #include "dma.h"
+#include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "usb_otg.h"
@@ -30,6 +31,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "frqdetect.h"
+#include "tmc5160.h"
 #include "com.h"
 #include "console.h"
 /* USER CODE END Includes */
@@ -101,6 +103,7 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM5_Init();
   MX_DAC_Init();
+  MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
   FRQDETECT_Init();
   COM_Init();
@@ -129,6 +132,10 @@ int main(void)
 	  	  if (iCntTask100ms == 90)
 	  	  {
 	  		FRQDETECT_Task100ms();
+	  	  }
+	  	  else if (iCntTask100ms == 91)
+	  	  {
+	  	  	TMC5160_Task100ms();
 	  	  }
 
 	  	  // Count the 10ms and 100ms Task
