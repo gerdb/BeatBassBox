@@ -25,17 +25,19 @@
 #include "tmc5160.h"
 #include "spi.h"
 #include "printf.h"
+#include "console.h"
 #include "errorhandler.h"
 
 /* Variables -----------------------------------------------------------------*/
 TMC5160_SPI_TX_s tmc_sSpiDMATxBuff;
 TMC5160_SPI_RX_s tmc_sSpiDMARxBuff;
 int tmc_bTransmitting;
+uint8_t tmc_u8LastReadAllAddr;
 
 /* Prototypes of static function ---------------------------------------------*/
-static void TMC5160_WriteData(int iAddress, uint32_t u32Data);
-static uint32_t TMC5160_ReadData(int iAddress);
-
+static void TMC5160_WriteData(uint8_t u8Addr, uint32_t u32Data);
+static uint32_t TMC5160_ReadData(uint8_t u8Addr);
+static void TMC5160_ReadAllNext(uint8_t u8Addr);
 
 
 /* Functions -----------------------------------------------------------------*/
@@ -59,6 +61,8 @@ void TMC5160_Init()
 	if (u8Version != 0x30)
 	{
 		ERRORHANDLER_SetError(ERROR_TMC5160_VERSION);
+		PRINTF_printf("TMC5160 not found. Version value: 0x%02x. Is it powered?", u8Version);
+		CONSOLE_Prompt();
 	}
 }
 
@@ -75,19 +79,19 @@ void TMC5160_Task1ms()
 /**
  * Writes data to the TMC5160
  *
- * \param iAddress TMC5160 address of the register
+ * \param u8Addr TMC5160 address of the register
  * \param u32Data Data to write into the register
  *
  *
  */
-static void TMC5160_WriteData(int iAddress, uint32_t u32Data)
+static void TMC5160_WriteData(uint8_t u8Addr, uint32_t u32Data)
 {
 	// Wait until last transmission is completed
 	while (tmc_bTransmitting);
 
 	// Fill data
 	tmc_sSpiDMATxBuff.u1W = 1;
-	tmc_sSpiDMATxBuff.u7Address = iAddress;
+	tmc_sSpiDMATxBuff.u7Address = u8Addr;
 	tmc_sSpiDMATxBuff.u32Data = __REV(u32Data);
 
 	// Transmit it
@@ -103,20 +107,20 @@ static void TMC5160_WriteData(int iAddress, uint32_t u32Data)
 /**
  * reads data from the TMC5160
  *
- * \param iAddress TMC5160 address of the register
+ * \param u8Addr TMC5160 address of the register
  *
  * \return u32Data Data read from the last SPI operation
  *
  *
  */
-static uint32_t TMC5160_ReadData(int iAddress)
+static uint32_t TMC5160_ReadData(uint8_t u8Addr)
 {
 	// Wait until last transmission is completed
 	while (tmc_bTransmitting);
 
 	// Fill data
 	tmc_sSpiDMATxBuff.u1W = 0;
-	tmc_sSpiDMATxBuff.u7Address = iAddress;
+	tmc_sSpiDMATxBuff.u7Address = u8Addr;
 	tmc_sSpiDMATxBuff.u32Data = 0;
 
 	// Transmit it
@@ -134,6 +138,73 @@ static uint32_t TMC5160_ReadData(int iAddress)
 	return __REV(tmc_sSpiDMARxBuff.u32Data);
 }
 
+/**
+ * Writes data to the TMC5160
+ *
+ * \param u8Addr TMC5160 address of the register
+ * \param u32Data Data to write into the register
+ *
+ *
+ */
+void TMC5160_Write(uint8_t u8Addr, uint32_t u32Data)
+{
+	TMC5160_WriteData(u8Addr, u32Data);
+}
+
+/**
+ * reads data from the TMC5160 and prints the result on the console
+ *
+ * \param u8Addr TMC5160 address of the register
+ *
+ *
+ */
+void TMC5160_Read(uint8_t u8Addr)
+{
+	TMC5160_ReadData(u8Addr);
+	tmc_u8LastReadAllAddr = u8Addr;
+	// Get the data with a 2nd SPI access
+	TMC5160_ReadAllNext(u8Addr);
+}
+
+/**
+ * reads data from the TMC5160 and prints the result on the console
+ *
+ * \param u8Addr TMC5160 address of the register
+ *
+ *
+ */
+static void TMC5160_ReadAllNext(uint8_t u8Addr)
+{
+	PRINTF_printf("0x%02x: 0x%8x",tmc_u8LastReadAllAddr, TMC5160_ReadData(u8Addr));
+	CONSOLE_NewLine();
+	tmc_u8LastReadAllAddr = u8Addr;
+}
+/**
+ * reads data from the TMC5160 and prints the result on the console
+ *
+ */
+void TMC5160_ReadAll()
+{
+	// Read all Registers
+
+	TMC5160_ReadData(0x00);
+	tmc_u8LastReadAllAddr = 0x00;
+
+	for (uint8_t i=0x01;i<=0x0C; i++)
+		TMC5160_ReadAllNext(i);
+	for (uint8_t i=0x10;i<=0x15; i++)
+		TMC5160_ReadAllNext(i);
+	for (uint8_t i=0x20;i<=0x2D; i++)
+		TMC5160_ReadAllNext(i);
+	for (uint8_t i=0x33;i<=0x36; i++)
+		TMC5160_ReadAllNext(i);
+	for (uint8_t i=0x38;i<=0x3D; i++)
+		TMC5160_ReadAllNext(i);
+	for (uint8_t i=0x60;i<=0x73; i++)
+		TMC5160_ReadAllNext(i);
+
+	TMC5160_ReadAllNext(0x00);
+}
 
 /**
  * Call this function every 1ms from main

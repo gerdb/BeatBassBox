@@ -40,6 +40,8 @@
 /* Function prototypes -------------------------------------------------------*/
 void CONSOLE_Init(void);
 void CONSOLE_NewChar(char c);
-
+void CONSOLE_Text(char* text);
+void CONSOLE_NewLine(void);
+void CONSOLE_Prompt(void);
 
 #endif /* __CONSOLE_H__ */

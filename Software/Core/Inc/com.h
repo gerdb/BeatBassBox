@@ -29,11 +29,11 @@
 #define HCOM huart3
 
 // Transmit buffer with read and write pointer
-#define COM_TX_SIZE 1024
+#define COM_TX_SIZE 2048
 #define COM_TX_MASK (COM_TX_SIZE-1)
 
 // Receive buffer with read and write pointer
-#define COM_RX_SIZE 1024
+#define COM_RX_SIZE 256
 #define COM_RX_MASK (COM_RX_SIZE-1)
 
 /* Function prototypes -------------------------------------------------------*/

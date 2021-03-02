@@ -23,6 +23,8 @@
 #include "com.h"
 #include "printf.h"
 #include "console.h"
+#include "frqdetect.h"
+#include "tmc5160.h"
 
 /* Variables -----------------------------------------------------------------*/
 char console_acLine[CONSOLE_LINE_LENGTH];
@@ -33,7 +35,6 @@ int32_t console_as32Signs[CONSOLE_PARAMETERS];
 int console_iPars;
 
 /* Local function prototypes -------------------------------------------------*/
-static void CONSOLE_NewLine(void);
 static void CONSOLE_ProcessLine(void);
 static int CONSOLE_ProcessCmd(void);
 static int CONSOLE_IsCmd(char *cmd);
@@ -46,7 +47,17 @@ static int CONSOLE_IsCmd(char *cmd);
 void CONSOLE_Init(void)
 {
 	PRINTF_printf("\r\n\r\nBeatBassBox v0.1");
-	CONSOLE_NewLine();
+	CONSOLE_Prompt();
+}
+
+/**
+ * Writes an (error) text
+ *
+ */
+void CONSOLE_Text(char* text)
+{
+	PRINTF_printf(text);
+	CONSOLE_Prompt();
 }
 
 /**
@@ -81,6 +92,36 @@ static int CONSOLE_ProcessCmd(void)
 			return CONSOLE_ERROR_PAR_COUNT;
 		}
 	}
+	else if (CONSOLE_IsCmd("TMC.READ"))
+	{
+		if (console_iPars == 0)
+		{
+			CONSOLE_NewLine();
+			TMC5160_ReadAll();
+		}
+		else if (console_iPars == 1)
+		{
+			CONSOLE_NewLine();
+			TMC5160_Read(console_as32Pars[0]);
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
+	else if (CONSOLE_IsCmd("TMC.WRITE"))
+	{
+		if (console_iPars == 2)
+		{
+			TMC5160_Write(
+					console_as32Pars[0],
+					console_as32Pars[1]);
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
 	else if (CONSOLE_IsCmd("FRQD.DEBUG"))
 	{
 		if (console_iPars < 2)
@@ -96,6 +137,7 @@ static int CONSOLE_ProcessCmd(void)
 	{
 		if (console_iPars == 0)
 		{
+			CONSOLE_NewLine();
 			FRQDETECT_PrintFilter();
 		}
 		else if (console_iPars == 2)
@@ -113,6 +155,7 @@ static int CONSOLE_ProcessCmd(void)
 	{
 		if (console_iPars == 0)
 		{
+			CONSOLE_NewLine();
 			FRQDETECT_PrintDetection();
 		}
 		else if (console_iPars == 3)
@@ -268,15 +311,25 @@ static void CONSOLE_ProcessLine(void)
 	{
 		PRINTF_printf("Error in parameter");
 	}
-	CONSOLE_NewLine();
+	CONSOLE_Prompt();
 
 }
+/**
+ * Prints a new new line
+ *
+ */
+void CONSOLE_NewLine(void)
+{
+	COM_PutByte('\r');
+	COM_PutByte('\n');
+}
+
 
 /**
  * Prepares a new new line
  *
  */
-static void CONSOLE_NewLine(void)
+void CONSOLE_Prompt(void)
 {
 
 	for (int i = 0; i < CONSOLE_PARAMETERS; i++)
@@ -284,8 +337,7 @@ static void CONSOLE_NewLine(void)
 		console_as32Pars[i] = 0;
 	}
 	console_iLinePtr = 0;
-	COM_PutByte('\r');
-	COM_PutByte('\n');
+	CONSOLE_NewLine();
 	COM_PutByte('>');
 }
 

@@ -57,5 +57,8 @@ typedef struct __packed
 void TMC5160_Init();
 void TMC5160_Task1ms();
 void TMC5160_Task100ms();
+void TMC5160_Write(uint8_t u8Addr, uint32_t u32Data);
+void TMC5160_Read(uint8_t u8Addr);
+void TMC5160_ReadAll();
 
 #endif /* __TMC5160_H__ */
