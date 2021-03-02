@@ -20,42 +20,24 @@
  *
  */
 
-#ifndef __TMC5160_H__
-#define __TMC5160_H__
+#ifndef __ERRORHANDLER_H__
+#define __ERRORHANDLER_H__
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 /* Constants  ----------------------------------------------------------------*/
-#define TMC5160_IOIN	0x04
+#define ERROR_NO_ERROR			0
+
+#define ERROR_TMC5160_VERSION	0x00000001
 
 
 /* Types ---------------------------------------------------------------------*/
-// Structure for one servo
-typedef struct __packed
-{
-  unsigned int	u7Address:7;
-  unsigned int	u1W:1;
-  uint32_t		u32Data;
-} TMC5160_SPI_TX_s;
 
-typedef struct __packed
-{
-	uint8_t		reset_flag:1;
-	uint8_t		driver_error:1;
-	uint8_t		sg2:1;
-	uint8_t		standstill:1;
-	uint8_t		velocity_reached:1;
-	uint8_t		position_reached:1;
-	uint8_t		status_stop_l:1;
-	uint8_t		status_stop_r:1;
-
-	uint32_t	u32Data;
-} TMC5160_SPI_RX_s;
 
 /* Function prototypes  ------------------------------------------------------*/
-void TMC5160_Init();
-void TMC5160_Task1ms();
-void TMC5160_Task100ms();
+void ERRORHANDLER_Init();
+void ERRORHANDLER_SetError(uint32_t u32ErrCode);
+void ERRORHANDLER_ResetError(uint32_t u32ErrCode);
 
-#endif /* __TMC5160_H__ */
+#endif /* __ERRORHANDLER_H__ */

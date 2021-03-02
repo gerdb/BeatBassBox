@@ -25,6 +25,7 @@
 #include "tmc5160.h"
 #include "spi.h"
 #include "printf.h"
+#include "errorhandler.h"
 
 /* Variables -----------------------------------------------------------------*/
 TMC5160_SPI_TX_s tmc_sSpiDMATxBuff;
@@ -33,6 +34,8 @@ int tmc_bTransmitting;
 
 /* Prototypes of static function ---------------------------------------------*/
 static void TMC5160_WriteData(int iAddress, uint32_t u32Data);
+static uint32_t TMC5160_ReadData(int iAddress);
+
 
 
 /* Functions -----------------------------------------------------------------*/
@@ -45,8 +48,18 @@ static void TMC5160_WriteData(int iAddress, uint32_t u32Data);
  */
 void TMC5160_Init()
 {
-//	HAL_ADC_Start_DMA(&hadc1, frqd_u32ADCDMABuff, 16);
+	volatile uint8_t u8Version;
+
 	tmc_bTransmitting = 0;
+
+	// Read the version
+	TMC5160_ReadData(TMC5160_IOIN);
+	// Get the data with a 2nd SPI access
+	u8Version = TMC5160_ReadData(TMC5160_IOIN)>>24;
+	if (u8Version != 0x30)
+	{
+		ERRORHANDLER_SetError(ERROR_TMC5160_VERSION);
+	}
 }
 
 
@@ -60,13 +73,16 @@ void TMC5160_Task1ms()
 }
 
 /**
- * Call this function every 1ms from main
+ * Writes data to the TMC5160
+ *
+ * \param iAddress TMC5160 address of the register
+ * \param u32Data Data to write into the register
  *
  *
  */
 static void TMC5160_WriteData(int iAddress, uint32_t u32Data)
 {
-	// Wait until last transmittion is completed
+	// Wait until last transmission is completed
 	while (tmc_bTransmitting);
 
 	// Fill data
@@ -84,6 +100,40 @@ static void TMC5160_WriteData(int iAddress, uint32_t u32Data)
 			5);
 }
 
+/**
+ * reads data from the TMC5160
+ *
+ * \param iAddress TMC5160 address of the register
+ *
+ * \return u32Data Data read from the last SPI operation
+ *
+ *
+ */
+static uint32_t TMC5160_ReadData(int iAddress)
+{
+	// Wait until last transmission is completed
+	while (tmc_bTransmitting);
+
+	// Fill data
+	tmc_sSpiDMATxBuff.u1W = 0;
+	tmc_sSpiDMATxBuff.u7Address = iAddress;
+	tmc_sSpiDMATxBuff.u32Data = 0;
+
+	// Transmit it
+	HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_RESET);
+	tmc_bTransmitting = 1;
+	HAL_SPI_TransmitReceive_DMA(
+			&hspi2,
+			(uint8_t*)&tmc_sSpiDMATxBuff,
+			(uint8_t*)&tmc_sSpiDMARxBuff,
+			5);
+
+	// For read we wailt also until last transmission is completed
+	while (tmc_bTransmitting);
+
+	return __REV(tmc_sSpiDMARxBuff.u32Data);
+}
+
 
 /**
  * Call this function every 1ms from main
@@ -92,7 +142,7 @@ static void TMC5160_WriteData(int iAddress, uint32_t u32Data)
  */
 void TMC5160_Task100ms()
 {
-	TMC5160_WriteData(3, 0x80000055);
+//	TMC5160_WriteData(3, 0x80000055);
 }
 /**
   * @brief  Tx and Rx Transfer completed callback.

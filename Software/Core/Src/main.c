@@ -34,6 +34,7 @@
 #include "tmc5160.h"
 #include "com.h"
 #include "console.h"
+#include "errorhandler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -105,9 +106,11 @@ int main(void)
   MX_DAC_Init();
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
+  ERRORHANDLER_Init();
   FRQDETECT_Init();
   COM_Init();
   CONSOLE_Init();
+  TMC5160_Init();
 
   /* USER CODE END 2 */
 
