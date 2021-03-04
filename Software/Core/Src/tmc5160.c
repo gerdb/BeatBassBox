@@ -50,7 +50,15 @@ static void TMC5160_ReadAllNext(uint8_t u8Addr);
  */
 void TMC5160_Init()
 {
-	volatile uint8_t u8Version;
+	uint8_t u8Version;
+	TMC5160_REG_GCONF unGconf = {0};
+	TMC5160_REG_SHORT_CONF unShortConf = {0};
+	TMC5160_REG_DRV_CONF unDrvConf = {0};
+	TMC5160_REG_IHOLD_IRUN unIHoldIRun = {0};
+	TMC5160_REG_TPOWERDOWN unTPowerDown = {0};
+	TMC5160_REG_ENC_CONST enEncConst = {0};
+	TMC5160_REG_CHOPCONF enChopConf = {0};
+	TMC5160_REG_PWMCONF enPWMConf = {0};
 
 	tmc_bTransmitting = 0;
 
@@ -58,12 +66,68 @@ void TMC5160_Init()
 	TMC5160_ReadData(TMC5160_IOIN);
 	// Get the data with a 2nd SPI access
 	u8Version = TMC5160_ReadData(TMC5160_IOIN)>>24;
-	if (u8Version != 0x30)
+	if (u8Version == 0x30)
+	{
+		PRINTF_printf("TMC5160 found with version: 0x%02x.", u8Version);
+		CONSOLE_Prompt();
+	}
+	else
 	{
 		ERRORHANDLER_SetError(ERROR_TMC5160_VERSION);
 		PRINTF_printf("TMC5160 not found. Version value: 0x%02x. Is it powered?", u8Version);
 		CONSOLE_Prompt();
 	}
+
+	unGconf.multistep_filt = 1;
+
+	unShortConf.S2VS_LEVEL = 6;
+	unShortConf.S2G_LEVEL = 6;
+	unShortConf.SHORTFILTER = 1;
+
+	unDrvConf.BBMCLKS = 4;
+	unDrvConf.DRVSTRENGTH = 2;
+
+	unIHoldIRun.IHOLD = 3;
+	unIHoldIRun.IRUN = 10;
+	unIHoldIRun.IHOLDDELAY = 7;
+
+	unTPowerDown.TPOWERDOWN = 10;
+
+	enEncConst.ENC_CONST = 0x00010000;
+
+	enChopConf.TOFF = 3;
+	enChopConf.HRST = 5;
+	enChopConf.HEND13 = 1;
+	enChopConf.TBL = 2;
+	enChopConf.TPFD = 4;
+
+	enPWMConf.PWM_OFS = 30;
+	enPWMConf.PWM_GRAD = 0;
+	enPWMConf.PWM_AUTOGRAD = 1;
+	enPWMConf.PWM_AUTOSCALE = 1;
+	enPWMConf.PWM_REG = 4;
+	enPWMConf.PWM_LIM = 12;
+
+	TMC5160_WriteData(TMC5160_GCONF, unGconf.u32);		// GCONF
+	TMC5160_WriteData(TMC5160_SHORTCONF, unShortConf.u32);	// SHORTCONF
+	TMC5160_WriteData(TMC5160_DRVCONF, unDrvConf.u32);		// DRVCONF
+	TMC5160_WriteData(TMC5160_IHOLD_IRUN, unIHoldIRun.u32);	// IHOLD_IRUN
+	TMC5160_WriteData(TMC5160_TPOWERDOWN, unTPowerDown.u32);	// TPOWERDOWN
+	TMC5160_WriteData(TMC5160_ENC_CONST, enEncConst.u32);	// ENC_CONST
+	TMC5160_WriteData(TMC5160_CHOPCONF, enChopConf.u32);	// CHOPCONF
+	TMC5160_WriteData(TMC5160_PWMCONF, enPWMConf.u32);		// PWMCONF
+
+	TMC5160_WriteData(TMC5160_A1, 1000);		// A1
+	TMC5160_WriteData(TMC5160_V1, 50000);		// V1
+	TMC5160_WriteData(TMC5160_AMAX, 500);		// AMAX
+	TMC5160_WriteData(TMC5160_VMAX, 200000);	// VMAX
+	TMC5160_WriteData(TMC5160_DMAX, 700);		// DMAX
+	TMC5160_WriteData(TMC5160_D1, 1400);		// D1
+	TMC5160_WriteData(TMC5160_VSTOP, 10);		// VSTOP
+	TMC5160_WriteData(TMC5160_RAMPMODE, 0);		// Target position move
+
+	// Enable driver
+	HAL_GPIO_WritePin(DRV_ENN_GPIO_Port, DRV_ENN_Pin, GPIO_PIN_RESET);
 }
 
 
@@ -138,6 +202,17 @@ static uint32_t TMC5160_ReadData(uint8_t u8Addr)
 	return __REV(tmc_sSpiDMARxBuff.u32Data);
 }
 
+/**
+ * Move to position
+ *
+ * \param s32Position Destination position
+ *
+ *
+ */
+void TMC5160_MoveTo(int32_t s32Position)
+{
+	TMC5160_WriteData(TMC5160_XTARGET, s32Position);
+}
 /**
  * Writes data to the TMC5160
  *

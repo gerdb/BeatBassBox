@@ -122,6 +122,19 @@ static int CONSOLE_ProcessCmd(void)
 			return CONSOLE_ERROR_PAR_COUNT;
 		}
 	}
+	else if (CONSOLE_IsCmd("TMC.MOVE"))
+	{
+		if (console_iPars == 1)
+		{
+			TMC5160_MoveTo(console_as32Pars[0]);
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
+
+
 	else if (CONSOLE_IsCmd("FRQD.DEBUG"))
 	{
 		if (console_iPars < 2)
