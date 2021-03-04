@@ -196,6 +196,7 @@ static int CONSOLE_ProcessCmd(void)
  */
 static void CONSOLE_ProcessLine(void)
 {
+	int iBase = 10;
 	int bIsCmd = 1;
 	int bSepFound = 0;
 	int iError = CONSOLE_NO_ERROR;
@@ -214,6 +215,7 @@ static void CONSOLE_ProcessLine(void)
 			{
 				bIsCmd = 0;
 				bSepFound = 1;
+				iBase = 10;
 			}
 			else
 			{
@@ -240,7 +242,8 @@ static void CONSOLE_ProcessLine(void)
 			}
 			else
 			{
-				if ((c >= '0' && c <= '9') || c == '-' || c == '+')
+				if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')
+						|| c == '-' || c == '+'|| c == 'X')
 				{
 					if (bSepFound)
 					{
@@ -251,6 +254,7 @@ static void CONSOLE_ProcessLine(void)
 							console_iPars = iParIndex + 1;
 							console_as32Pars[iParIndex] = 0;
 							console_as32Signs[iParIndex] = 1;
+							iBase = 10;
 						}
 						else
 						{
@@ -260,10 +264,19 @@ static void CONSOLE_ProcessLine(void)
 					}
 					if (iParIndex >= 0)
 					{
-						if (c >= '0' && c <= '9')
+						if (c == 'X')
 						{
-							console_as32Pars[iParIndex] *= 10;
+							iBase = 16;
+						}
+						else if (c >= '0' && c <= '9')
+						{
+							console_as32Pars[iParIndex] *= iBase;
 							console_as32Pars[iParIndex] += c - '0';
+						}
+						else if (c >= 'A' && c <= 'F')
+						{
+							console_as32Pars[iParIndex] *= iBase;
+							console_as32Pars[iParIndex] += c - 'A' + 10;
 						}
 						else if (c == '-')
 						{
