@@ -30,12 +30,46 @@
 
 /* Variables -----------------------------------------------------------------*/
 int ustick_bMounted = 0;
-
+int ustick_iBBBFiles = 0;
 /* Local function prototypes -------------------------------------------------*/
+static void USBSTICK_CheckBBBFiles(void);
 
 /* Functions -----------------------------------------------------------------*/
 
 
+
+/**
+ * @brief Reads the Configuration file
+ */
+static void USBSTICK_CheckBBBFiles(void)
+{
+    FILINFO fno;
+    char sFilename[] = "*.bbb";
+
+    // Count the BBB files
+    for (int i=0;i<=9; i++)
+    {
+    	sFilename[0] = i + '0';
+    	if (f_stat(sFilename, &fno) == FR_OK)
+    	{
+    		ustick_iBBBFiles ++;
+    	}
+    }
+
+    // How many BBB files found?
+	PRINTF_printf("%d BBB files found", ustick_iBBBFiles);
+	CONSOLE_Prompt();
+
+	// There must be at least one BBB file
+	if (ustick_iBBBFiles > 0)
+    {
+		ERRORHANDLER_ResetError(ERROR_NO_BBB_FILE);
+    }
+    else
+    {
+    	ERRORHANDLER_SetError(ERROR_NO_BBB_FILE);
+    }
+}
 
 /**
  * Callback function: An USB stick was connected
@@ -48,9 +82,7 @@ void USBSTICK_Connected(void)
 		ustick_bMounted = 1;
 		PRINTF_printf("USB stick connected");
 		CONSOLE_Prompt();
-		ERRORHANDLER_ResetError(ERROR_NO_BBB_FILE);
-
-		//USB_STICK_ReadConfigFile();
+		USBSTICK_CheckBBBFiles();
 	}
 }
 
