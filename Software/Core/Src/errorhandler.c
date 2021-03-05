@@ -41,7 +41,7 @@ static void ERRORHANDLER_Leds();
  */
 void ERRORHANDLER_Init()
 {
-	u32ErrorCode = ERROR_NO_ERROR;
+	u32ErrorCode = ERROR_NO_BBB_FILE;
 	ERRORHANDLER_Leds();
 }
 
@@ -54,10 +54,15 @@ static void ERRORHANDLER_Leds()
 {
 	// LD1: green
 	// LD3: red
-	/*
+
 	if (u32ErrorCode == ERROR_NO_ERROR)
 	{
 		  HAL_GPIO_WritePin(GPIOB, LD1_Pin, GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_RESET);
+	}
+	else if (u32ErrorCode == ERROR_NO_BBB_FILE)
+	{
+		  HAL_GPIO_WritePin(GPIOB, LD1_Pin, GPIO_PIN_RESET);
 		  HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_RESET);
 	}
 	else
@@ -65,7 +70,7 @@ static void ERRORHANDLER_Leds()
 		  HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_SET);
 		  HAL_GPIO_WritePin(GPIOB, LD1_Pin, GPIO_PIN_RESET);
 	}
-	*/
+
 }
 
 

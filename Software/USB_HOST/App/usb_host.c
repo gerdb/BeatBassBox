@@ -26,7 +26,7 @@
 #include "usbh_msc.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "usbstick.h"
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
@@ -111,10 +111,12 @@ static void USBH_UserProcess  (USBH_HandleTypeDef *phost, uint8_t id)
 
   case HOST_USER_DISCONNECTION:
   Appli_state = APPLICATION_DISCONNECT;
+  USBSTICK_Disconnected();
   break;
 
   case HOST_USER_CLASS_ACTIVE:
   Appli_state = APPLICATION_READY;
+  USBSTICK_Connected();
   break;
 
   case HOST_USER_CONNECTION:

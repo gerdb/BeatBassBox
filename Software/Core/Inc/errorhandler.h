@@ -29,7 +29,8 @@
 /* Constants  ----------------------------------------------------------------*/
 #define ERROR_NO_ERROR			0
 
-#define ERROR_TMC5160_VERSION	0x00000001
+#define ERROR_NO_BBB_FILE		0x00000001
+#define ERROR_TMC5160_VERSION	0x00000002
 
 
 /* Types ---------------------------------------------------------------------*/
