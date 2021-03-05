@@ -34,6 +34,7 @@
 #define TMC5160_IHOLD_IRUN	0x10
 #define TMC5160_TPOWERDOWN	0x11
 #define TMC5160_RAMPMODE	0x20
+#define TMC5160_VSTART		0x23
 #define TMC5160_A1			0x24
 #define TMC5160_V1			0x25
 #define TMC5160_AMAX		0x26
@@ -169,7 +170,8 @@ typedef union
 		uint8_t		DISFDCC:1;
 		uint8_t		:1;
 		uint8_t		CHM:1;
-		uint8_t		TBL:2;
+		uint8_t		TBL0:1;
+		uint8_t		TBL1:1;
 		uint8_t		:1;
 		uint8_t		VHIGHFS:1;
 		uint8_t		VHIGHCHM:1;

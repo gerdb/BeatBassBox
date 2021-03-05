@@ -98,7 +98,8 @@ void TMC5160_Init()
 	enChopConf.TOFF = 3;
 	enChopConf.HRST = 5;
 	enChopConf.HEND13 = 1;
-	enChopConf.TBL = 2;
+	enChopConf.TBL0 = 0;
+	enChopConf.TBL1 = 1;
 	enChopConf.TPFD = 4;
 
 	enPWMConf.PWM_OFS = 30;
@@ -108,11 +109,11 @@ void TMC5160_Init()
 	enPWMConf.PWM_REG = 4;
 	enPWMConf.PWM_LIM = 12;
 
-	TMC5160_WriteData(TMC5160_GCONF, unGconf.u32);		// GCONF
+	TMC5160_WriteData(TMC5160_GCONF, unGconf.u32);			// GCONF
 	TMC5160_WriteData(TMC5160_SHORTCONF, unShortConf.u32);	// SHORTCONF
 	TMC5160_WriteData(TMC5160_DRVCONF, unDrvConf.u32);		// DRVCONF
 	TMC5160_WriteData(TMC5160_IHOLD_IRUN, unIHoldIRun.u32);	// IHOLD_IRUN
-	TMC5160_WriteData(TMC5160_TPOWERDOWN, unTPowerDown.u32);	// TPOWERDOWN
+	TMC5160_WriteData(TMC5160_TPOWERDOWN, unTPowerDown.u32);// TPOWERDOWN
 	TMC5160_WriteData(TMC5160_ENC_CONST, enEncConst.u32);	// ENC_CONST
 	TMC5160_WriteData(TMC5160_CHOPCONF, enChopConf.u32);	// CHOPCONF
 	TMC5160_WriteData(TMC5160_PWMCONF, enPWMConf.u32);		// PWMCONF
@@ -123,6 +124,7 @@ void TMC5160_Init()
 	TMC5160_WriteData(TMC5160_VMAX, 200000);	// VMAX
 	TMC5160_WriteData(TMC5160_DMAX, 700);		// DMAX
 	TMC5160_WriteData(TMC5160_D1, 1400);		// D1
+	TMC5160_WriteData(TMC5160_VSTART, 10);		// VSTART
 	TMC5160_WriteData(TMC5160_VSTOP, 10);		// VSTOP
 	TMC5160_WriteData(TMC5160_RAMPMODE, 0);		// Target position move
 

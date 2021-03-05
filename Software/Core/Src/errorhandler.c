@@ -54,6 +54,7 @@ static void ERRORHANDLER_Leds()
 {
 	// LD1: green
 	// LD3: red
+	/*
 	if (u32ErrorCode == ERROR_NO_ERROR)
 	{
 		  HAL_GPIO_WritePin(GPIOB, LD1_Pin, GPIO_PIN_SET);
@@ -64,6 +65,7 @@ static void ERRORHANDLER_Leds()
 		  HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_SET);
 		  HAL_GPIO_WritePin(GPIOB, LD1_Pin, GPIO_PIN_RESET);
 	}
+	*/
 }
 
 
