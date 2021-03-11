@@ -44,7 +44,6 @@ SONG_Token_s song_stTokens[1024];
 int song_iJDestinationLen;
 int song_iJMemoryLen;
 int song_iTokenLen;
-int song_iTokenCnt;
 
 /* Local function prototypes -------------------------------------------------*/
 static void SONG_StatusLED();
@@ -56,7 +55,8 @@ static int SONG_DecodeTempo(char* sLine);
 static int SONG_DecodeStart(char* sLine);
 static int SONG_IsEndOfLineChar(char c);
 static int SONG_GetNumber(char* s, int pos, int len);
-
+static int SONG_DecodeError(char* sErrorText);
+static int SONG_DecodeCheckSign(char* sLine, int pos, char c);
 
 /* Functions -----------------------------------------------------------------*/
 
@@ -201,7 +201,7 @@ static int SONG_DecodeStart(char* sLine)
 		return 1;
 	}
 
-	song_iTokenCnt = 0;
+	song_iTokenLen = 0;
 	return 0;
 }
 
@@ -243,6 +243,39 @@ static int SONG_GetNumber(char* s, int pos, int len)
 	return val;
 }
 
+/**
+ * Outputs an error text
+ *
+ * \param sErrorText: the error text
+ * \return 1 = error
+ */
+static int SONG_DecodeError(char* sErrorText)
+{
+	PRINTF_printf(sErrorText);
+	CONSOLE_Prompt();
+	return -1;
+}
+
+/**
+ * Outputs an error text
+ *
+ * \param sLine: the line
+ * \param pos: position of the expected sign
+ * \param c: expected sign
+ * \return 1 = error
+ */
+static int SONG_DecodeCheckSign(char* sLine, int pos, char c)
+{
+	if (sLine[pos] != c)
+	{
+		PRINTF_printf("There must be a '%c' at position %d",c , pos);
+		CONSOLE_Prompt();
+		return -1;
+	}
+	return 0;
+}
+
+
 
 /**
  * Decodes a BBB line
@@ -258,25 +291,24 @@ static int SONG_DecodeLine(char* sLine)
 	int iBass;
 	int iBeat;
 	int bIsArticulated;
+	int bIsSwitch;
+	int iJumpTo;
+	int iPlayUntil;
+	int iContinueAt;
+	int bAlFine;
+	int bWithRepeat;
 
 
 	// Get Token number
 	iTokenNr = SONG_GetNumber(sLine, 0, 3);
 	// Check syntax
-	if (iTokenNr != song_iTokenCnt)
+	if (iTokenNr != song_iTokenLen)
 	{
-		PRINTF_printf("Invalid token number");
-		CONSOLE_Prompt();
-		return -1;
+		return (SONG_DecodeError("Invalid token number"));
 	}
 
 	// Check syntax
-	if (sLine[3]!= ':')
-	{
-		PRINTF_printf("There must be a ':' at position 3");
-		CONSOLE_Prompt();
-		return -1;
-	}
+	if (SONG_DecodeCheckSign(sLine, 3, ':') == -1) return -1;
 
 	// Decode the command
 	if (sLine[5]== 'B' && sLine[6]== 'B' && sLine[7]== ':')
@@ -286,17 +318,10 @@ static int SONG_DecodeLine(char* sLine)
 		// Check range
 		if (iDuration<0 || iDuration>31)
 		{
-			PRINTF_printf("Duration must be between 0 and 31");
-			CONSOLE_Prompt();
-			return -1;
+			return (SONG_DecodeError("Duration must be between 0 and 31"));
 		}
 		// Check syntax
-		if (sLine[10]!= ':')
-		{
-			PRINTF_printf("There must be a ':' at position 10");
-			CONSOLE_Prompt();
-			return -1;
-		}
+		if (SONG_DecodeCheckSign(sLine, 10, ':') == -1) return -1;
 
 		// Get the bass note
 		iBass = SONG_GetNumber(sLine, 11, 2);
@@ -308,9 +333,7 @@ static int SONG_DecodeLine(char* sLine)
 			// Check range
 			if (iBass<1 || iBass>63)
 			{
-				PRINTF_printf("Bass note out of range");
-				CONSOLE_Prompt();
-				return -1;
+				return (SONG_DecodeError("Bass note out of range"));
 			}
 		}
 
@@ -325,18 +348,11 @@ static int SONG_DecodeLine(char* sLine)
 		}
 		else
 		{
-			PRINTF_printf("Invalid articulation sign");
-			CONSOLE_Prompt();
-			return -1;
+			return (SONG_DecodeError("Invalid articulation sign"));
 		}
 
 		// Check syntax
-		if (sLine[14]!= ':')
-		{
-			PRINTF_printf("There must be a ':' at position 14");
-			CONSOLE_Prompt();
-			return -1;
-		}
+		if (SONG_DecodeCheckSign(sLine, 14, ':') == -1) return -1;
 
 		// Fill the beat structure digital 0/1
 		iBeat = 0;
@@ -348,9 +364,7 @@ static int SONG_DecodeLine(char* sLine)
 			// syntax check
 			if (SONG_IsEndOfLineChar(c))
 			{
-				PRINTF_printf("End of line");
-				CONSOLE_Prompt();
-				return -1;
+				return (SONG_DecodeError("End of line"));
 			}
 			if (c != ' ')
 			{
@@ -359,42 +373,168 @@ static int SONG_DecodeLine(char* sLine)
 		}
 
 		// It's a bass-beat chord an not a jump
-		song_stTokens[song_iTokenCnt].stBassBeat.u1_isJump = 0;
-		song_stTokens[song_iTokenCnt].stBassBeat.u5_Duration = iDuration;
-		song_stTokens[song_iTokenCnt].stBassBeat.u6_Bass = iBass;
-		song_stTokens[song_iTokenCnt].stBassBeat.u1_Articulated = bIsArticulated;
-		song_stTokens[song_iTokenCnt].stBassBeat.u10_Beat = iBeat;
+		song_stTokens[song_iTokenLen].stBassBeat.u1_isJump = 0;
+		song_stTokens[song_iTokenLen].stBassBeat.u5_Duration = iDuration;
+		song_stTokens[song_iTokenLen].stBassBeat.u6_Bass = iBass;
+		song_stTokens[song_iTokenLen].stBassBeat.u1_Articulated = bIsArticulated;
+		song_stTokens[song_iTokenLen].stBassBeat.u10_Beat = iBeat;
 	}
 	else if (sLine[5]== ']' && sLine[7]== ':')
 	{
+		// Decode the switch sign
+		if (sLine[6]== 'S')
+		{
+			bIsSwitch = 1;
+		}
+		else if (sLine[6]== ' ')
+		{
+			bIsSwitch = 0;
+		}
+		else
+		{
+			return (SONG_DecodeError("Invalid switch sign"));
+		}
+
+		// Check syntax
+		if (SONG_DecodeCheckSign(sLine, 7, ':') == -1) return -1;
+
+		// Get jump address
+		iJumpTo = SONG_GetNumber(sLine, 8, 3);
+
 		// it was a single repeat
+		song_stTokens[song_iTokenLen].stJump.u1_isJump = 1;
+		song_stTokens[song_iTokenLen].stJump.u3_JumpType = SONG_J_REPEAT;
+		song_stTokens[song_iTokenLen].stJump.u1_isSwitch = bIsSwitch;
+		song_stTokens[song_iTokenLen].stJump.u1_alFine = 0;
+		song_stTokens[song_iTokenLen].stJump.u1_withRepeat = 0;
+
+		song_stJDestinations[song_iJDestinationLen].u10_jumpTo = iJumpTo;
+		song_stJDestinations[song_iJDestinationLen].u10_playUntil = SONG_NO_JMP_DEST;
+		song_stJDestinations[song_iJDestinationLen].u10_continueAt = SONG_NO_JMP_DEST;
+		song_stTokens[song_iTokenLen].stJump.u8_jumpToDestinations = song_iJDestinationLen;
+		song_iJDestinationLen++;
+
+		song_stTokens[song_iTokenLen].stJump.u8_jumpToMemory = song_iJMemoryLen;
+		song_iJMemoryLen ++;
 	}
 	else if (sLine[5]== 'F' && sLine[6]== 'I')
 	{
 		// it was a fine
+		song_stTokens[song_iTokenLen].stJump.u1_isJump = 1;
+		song_stTokens[song_iTokenLen].stJump.u3_JumpType = SONG_J_FINE;
+		song_stTokens[song_iTokenLen].stJump.u1_isSwitch = 0;
+		song_stTokens[song_iTokenLen].stJump.u1_alFine = 0;
+		song_stTokens[song_iTokenLen].stJump.u1_withRepeat = 0;
+
+		song_stJDestinations[song_iJDestinationLen].u10_jumpTo = SONG_NO_JMP_DEST;
+		song_stJDestinations[song_iJDestinationLen].u10_playUntil = SONG_NO_JMP_DEST;
+		song_stJDestinations[song_iJDestinationLen].u10_continueAt = SONG_NO_JMP_DEST;
+		song_stTokens[song_iTokenLen].stJump.u8_jumpToDestinations = SONG_NO_JMP_REF;
+		song_stTokens[song_iTokenLen].stJump.u8_jumpToMemory = SONG_NO_JMP_REF;
 	}
 	else if (sLine[5]== 'V' && sLine[6]== '1')
 	{
 		// it was a volta
+
+		// Check syntax
+		if (SONG_DecodeCheckSign(sLine, 7, ':') == -1) return -1;
+
+		// Get jump address
+		iJumpTo = SONG_GetNumber(sLine, 8, 3);
+
+		// it was a volta
+		song_stTokens[song_iTokenLen].stJump.u1_isJump = 1;
+		song_stTokens[song_iTokenLen].stJump.u3_JumpType = SONG_J_VOLTA1;
+		song_stTokens[song_iTokenLen].stJump.u1_isSwitch = 0;
+		song_stTokens[song_iTokenLen].stJump.u1_alFine = 0;
+		song_stTokens[song_iTokenLen].stJump.u1_withRepeat = 0;
+
+		song_stJDestinations[song_iJDestinationLen].u10_jumpTo = iJumpTo;
+		song_stJDestinations[song_iJDestinationLen].u10_playUntil = SONG_NO_JMP_DEST;
+		song_stJDestinations[song_iJDestinationLen].u10_continueAt = SONG_NO_JMP_DEST;
+		song_stTokens[song_iTokenLen].stJump.u8_jumpToDestinations = song_iJDestinationLen;
+		song_iJDestinationLen++;
+
+		song_stTokens[song_iTokenLen].stJump.u8_jumpToMemory = song_iJMemoryLen;
+		song_iJMemoryLen ++;
+
 	}
 	else if (sLine[5]== 'J' && sLine[8]== ':')
 	{
 		// it was a jump
+		// Check syntax
+		if (SONG_DecodeCheckSign(sLine, 8, ':') == -1) return -1;
+		if (SONG_DecodeCheckSign(sLine, 12, '>') == -1) return -1;
+		if (SONG_DecodeCheckSign(sLine, 16, '>') == -1) return -1;
+
+		// Decode the jump repeat sign
+		if (sLine[6]== 'R')
+		{
+			bWithRepeat = 1;
+		}
+		else if (sLine[6]== 'P')
+		{
+			bWithRepeat = 0;
+		}
+		else
+		{
+			return (SONG_DecodeError("Invalid jump repeat sign"));
+		}
+
+		// Decode the al fine sign
+		if (sLine[7]== 'F')
+		{
+			bAlFine = 1;
+		}
+		else if (sLine[7]== ' ')
+		{
+			bAlFine = 0;
+		}
+		else
+		{
+			return (SONG_DecodeError("Invalid al fine sign"));
+		}
+
+		// Get jump addresses
+		iJumpTo = SONG_GetNumber(sLine, 9, 3);
+		iPlayUntil = SONG_GetNumber(sLine, 13, 3);
+		iContinueAt = SONG_GetNumber(sLine, 17, 3);
+
+		// it was a jump
+		song_stTokens[song_iTokenLen].stJump.u1_isJump = 1;
+		song_stTokens[song_iTokenLen].stJump.u3_JumpType = SONG_J_JUMP;
+		song_stTokens[song_iTokenLen].stJump.u1_isSwitch = 0;
+		song_stTokens[song_iTokenLen].stJump.u1_alFine = bAlFine;
+		song_stTokens[song_iTokenLen].stJump.u1_withRepeat = bWithRepeat;
+
+		song_stJDestinations[song_iJDestinationLen].u10_jumpTo = iJumpTo;
+		song_stJDestinations[song_iJDestinationLen].u10_playUntil = iPlayUntil;
+		song_stJDestinations[song_iJDestinationLen].u10_continueAt = iContinueAt;
+		song_stTokens[song_iTokenLen].stJump.u8_jumpToDestinations = song_iJDestinationLen;
+		song_iJDestinationLen++;
+
+		song_stTokens[song_iTokenLen].stJump.u8_jumpToMemory = SONG_NO_JMP_REF;
 	}
 	else
 	{
-		PRINTF_printf("Unknown command");
-		CONSOLE_Prompt();
-		return -1;
+		return (SONG_DecodeError("Unknown command"));
 	}
 
-	song_iTokenCnt++;
-	// Check syntax
-	if (song_iTokenCnt >= 1024)
+	song_iTokenLen++;
+	// Check range
+	if (song_iTokenLen >= 1024)
 	{
-		PRINTF_printf("To many tokens");
-		CONSOLE_Prompt();
-		return -1;
+		return (SONG_DecodeError("Too many tokens"));
+	}
+	// Check range
+	if (song_iJDestinationLen >= SONG_NO_JMP_REF)
+	{
+		return (SONG_DecodeError("Too many destinations"));
+	}
+	// Check range
+	if (song_iJMemoryLen >= SONG_NO_JMP_REF)
+	{
+		return (SONG_DecodeError("To many jumps with memory"));
 	}
 
 	// Puh, everything was ok. At least in this line
@@ -418,7 +558,7 @@ static int SONG_Load(int iSong)
     // We accept only 10 songs from 0..9
     if (iSong<0 || iSong>9)
     {
-		PRINTF_printf("Only songs 0.BBB .. 9.BBB allowed", iSong);
+		PRINTF_printf("Only songs 0.BBB .. 9.BBB allowed");
 		CONSOLE_Prompt();
     	return 1;
     }

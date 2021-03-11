@@ -26,12 +26,13 @@
 #include "main.h"
 
 /* Defines -------------------------------------------------------------------*/
-
+#define SONG_NO_JMP_REF 0xFF
+#define SONG_NO_JMP_DEST 0x03FF
 /* Types ---------------------------------------------------------------------*/
 
 typedef enum
 {
-	REPEAT, REPEAT_SWITCH, FINE, VOLTA1, JUMP, END
+	SONG_J_REPEAT, SONG_J_FINE, SONG_J_VOLTA1, SONG_J_JUMP, SONG_J_END
 } SONG_JumpType_e;
 
 // One entry with jump destinations
