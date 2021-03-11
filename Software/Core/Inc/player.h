@@ -1,9 +1,9 @@
 /*
  *  Project:      BeatBassBox
- *  File:         usbstick.h
+ *  File:         player.h
  *  Author:       Gerd Bartelt - www.sebulli.com
  *
- *  Description:  header file for usbstick.c
+ *  Description:  header file for player.c
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef __USBSTICK_H__
-#define __USBSTICK_H__
+#ifndef __PLAYER_H__
+#define __PLAYER_H__
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -28,12 +28,11 @@
 /* Defines -------------------------------------------------------------------*/
 
 /* Global variables ----------------------------------------------------------*/
-extern int ustick_bMounted;
+
 
 /* Function prototypes -------------------------------------------------------*/
-void USBSTICK_Connected(void);
-void USBSTICK_Disconnected(void);
-int USBSTICK_PluggedInEvent(void);
+void PLAYER_Init();
+void PLAYER_Task1ms();
 
 
-#endif /* __USB_STICK_H__ */
+#endif /* __PLAYER_H__ */

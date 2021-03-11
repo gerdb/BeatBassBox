@@ -33,6 +33,8 @@
 /* USER CODE BEGIN Includes */
 #include "frqdetect.h"
 #include "tmc5160.h"
+#include "song.h"
+#include "player.h"
 #include "com.h"
 #include "console.h"
 #include "errorhandler.h"
@@ -111,10 +113,12 @@ int main(void)
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 2 */
   ERRORHANDLER_Init();
-  FRQDETECT_Init();
   COM_Init();
   CONSOLE_Init();
+  FRQDETECT_Init();
   TMC5160_Init();
+  SONG_Init();
+  PLAYER_Init();
 
   /* USER CODE END 2 */
 
@@ -127,6 +131,8 @@ int main(void)
 		  // 1ms Tasks
   		  FRQDETECT_Task1ms();
 	  	  COM_RxBufferTask();
+  		  SONG_Task1ms();
+  		  PLAYER_Task1ms();
 
 	  	  // 10ms Tasks. Use values of 0..8 (9 is for 100ms tasks)
 	  	  if (iCntTask10ms == 1)
