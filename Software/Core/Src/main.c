@@ -150,6 +150,10 @@ int main(void)
 	  	  {
 	  	  	TMC5160_Task100ms();
 	  	  }
+	  	  else if (iCntTask100ms == 92)
+	  	  {
+	  	  	PLAYER_Task100ms();
+	  	  }
 
 	  	  // Count the 10ms and 100ms Task
 		  bTick1ms = 0;

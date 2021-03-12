@@ -33,6 +33,7 @@
 /* Function prototypes -------------------------------------------------------*/
 void PLAYER_Init();
 void PLAYER_Task1ms();
+void PLAYER_Task100ms();
 
 
 #endif /* __PLAYER_H__ */

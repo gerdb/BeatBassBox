@@ -27,9 +27,23 @@
 #include "errorhandler.h"
 
 /* Variables -----------------------------------------------------------------*/
+int player_bButton;
+int player_bButtonOld;
+int player_bButtonClick;
+int player_bPlaying;
+int player_iBlinkCnt;
+int player_iPeriod;
+int player_iTime;
+int player_iDelayNext;
+int player_iStep;
+
+SONG_Token_s player_stCurrentToken;
+
 
 /* Local function prototypes -------------------------------------------------*/
-
+static void PLAYER_StatusLED();
+static void PLAYER_Start();
+static void PLAYER_Stop();
 /* Functions -----------------------------------------------------------------*/
 
 /**
@@ -40,8 +54,72 @@
 void PLAYER_Init()
 {
 	SONG_Select(1);
+	player_bButton = 0;
+	player_bButtonOld = 0;
+	player_bButtonClick = 0;
+	player_bPlaying = 0;
+	player_iPeriod = 100;
 }
 
+/**
+ * Turn on/off the blue LED if the selected song was loaded
+ *
+ */
+static void PLAYER_StatusLED()
+{
+
+	player_iBlinkCnt ++;
+	// Turn on/off the blue LED
+	if (SONG_Loaded() && (!player_bPlaying || (player_iBlinkCnt & 0x0200)))
+	{
+		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+	}
+
+	if (player_bPlaying && song_bHasSwitch && !song_bSwitchSet)
+	{
+		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+	}
+
+}
+
+/**
+ * Starts a song
+ *
+ */
+void PLAYER_Start()
+{
+	if (SONG_Loaded())
+	{
+		PRINTF_printf("Start %s", song_sTitle);
+		CONSOLE_Prompt();
+
+		SONG_Start();
+		player_bPlaying = 1;
+		player_iBlinkCnt = 0;
+		player_iTime = 0;
+		player_iDelayNext = 0;
+		player_iStep = 0;
+	}
+}
+
+/**
+ * Stops a song
+ *
+ */
+void PLAYER_Stop()
+{
+	player_bPlaying = 0;
+	PRINTF_printf("Stop");
+	CONSOLE_Prompt();
+}
 
 /**
  * Call this function every 1ms from main
@@ -49,4 +127,72 @@ void PLAYER_Init()
  */
 void PLAYER_Task1ms()
 {
+	PLAYER_StatusLED();
+
+	// Play the song
+	if (player_bPlaying)
+	{
+		player_iTime++;
+		if (player_iTime > player_iPeriod)
+		{
+			player_iTime = 0;
+			player_iStep ++;
+			if (player_iStep > player_iDelayNext)
+			{
+				player_iStep = 0;
+
+				// Get the next token
+				player_stCurrentToken = SONG_GetNext();
+				if (player_stCurrentToken.stJump.u1_isJump)
+				{
+					if (player_stCurrentToken.stJump.u3_JumpType == SONG_END)
+					{
+						PLAYER_Stop();
+					}
+					player_iDelayNext = 0;
+				}
+				else
+				{
+					PRINTF_printf("%d ", player_stCurrentToken.stBassBeat.u6_Bass);
+					player_iDelayNext = player_stCurrentToken.stBassBeat.u5_Duration;
+				}
+			}
+		}
+	}
 }
+
+/**
+ * Call this function every 100ms from main
+ *
+ */
+void PLAYER_Task100ms()
+{
+	player_bButton = HAL_GPIO_ReadPin(USER_Btn_GPIO_Port,USER_Btn_Pin);
+
+	player_bButtonClick = player_bButton && !player_bButtonOld;
+	player_bButtonOld = player_bButton;
+
+	// Toggle playing with button
+	if (player_bButtonClick)
+	{
+		if (!player_bPlaying)
+		{
+			PLAYER_Start();
+		}
+		else
+		{
+			if (song_bHasSwitch && !song_bSwitchSet)
+			{
+				// Set the switch flag if button was pressed while playing
+				song_bSwitchSet = 1;
+			}
+			else
+			{
+				PLAYER_Stop();
+			}
+		}
+
+		player_bButtonClick = 0;
+	}
+}
+

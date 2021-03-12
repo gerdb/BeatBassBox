@@ -57,13 +57,11 @@ static void ERRORHANDLER_Leds()
 
 	if (u32ErrorCode == ERROR_NO_ERROR)
 	{
-		  HAL_GPIO_WritePin(GPIOB, LD1_Pin, GPIO_PIN_SET);
-		  HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 	}
 	else
 	{
-		  HAL_GPIO_WritePin(GPIOB, LD3_Pin, GPIO_PIN_SET);
-		  HAL_GPIO_WritePin(GPIOB, LD1_Pin, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
 	}
 
 }

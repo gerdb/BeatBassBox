@@ -37,16 +37,25 @@ int song_bSongLoaded;
 int song_iBBBFileVersion = 0;
 char song_sTitle[40] = "No Song loaded";
 int song_iTempo = 120;
+int song_bHasSwitch = 0;
 
 SONG_JumpToDestinations_s song_stJDestinations[256];
 SONG_JumpToMemory_s song_stJMemory[256];
 SONG_Token_s song_stTokens[1024];
+SONG_Token_s song_endToken;
 int song_iJDestinationLen;
 int song_iJMemoryLen;
 int song_iTokenLen;
+int song_iTokenIndex;
+int song_bSwitchSet;
+int song_bIsFine;
+int song_bWithRepeat;
+int song_iPlayUntil;
+int song_iContinueAt;
+
+
 
 /* Local function prototypes -------------------------------------------------*/
-static void SONG_StatusLED();
 static int SONG_Load(int iSong);
 static int SONG_DecodeLine(char* sLine);
 static int SONG_DecodeVersion(char* sLine);
@@ -57,6 +66,7 @@ static int SONG_IsEndOfLineChar(char c);
 static int SONG_GetNumber(char* s, int pos, int len);
 static int SONG_DecodeError(char* sErrorText);
 static int SONG_DecodeCheckSign(char* sLine, int pos, char c);
+static void SONG_AddEnd();
 
 /* Functions -----------------------------------------------------------------*/
 
@@ -74,6 +84,11 @@ void SONG_Init()
 	song_iJDestinationLen = 0;
 	song_iJMemoryLen = 0;
 	song_iTokenLen = 0;
+	song_iTokenIndex = 0;
+	song_bHasSwitch = 0;
+	song_bIsFine = 0;
+	song_endToken.stJump.u1_isJump = 1;
+	song_endToken.stJump.u3_JumpType = SONG_END;
 }
 
 
@@ -86,7 +101,6 @@ void SONG_Task1ms()
 	int bUSBPluggedIn;
 
 	song_bSongLoaded = (song_iSongLoaded == song_iSongSelected) && song_iSongLoaded >= 0;
-	SONG_StatusLED();
 
 	bUSBPluggedIn = USBSTICK_PluggedInEvent();
 
@@ -107,6 +121,198 @@ void SONG_Task1ms()
 			}
 		}
 	}
+}
+
+/**
+ * Resets the song pointer and all memory entries to start a new song
+ *
+ */
+void SONG_Start()
+{
+	for (int i=0; i<song_iJMemoryLen ; i++)
+	{
+		song_stJMemory[i].u8Runs = 0;
+	}
+
+	// next is 0
+	song_iTokenIndex = -1;
+	song_bSwitchSet = 0;
+	song_bIsFine = 0;
+	song_bWithRepeat = 1;
+	song_iPlayUntil = SONG_NO_JMP_DEST;
+	song_iContinueAt = SONG_NO_JMP_DEST;
+}
+
+/**
+ * Get the next token
+ *
+ */
+SONG_Token_s SONG_GetNext()
+{
+	SONG_Token_s stToken;
+	SONG_JumpToMemory_s *pMemory;
+	int bHasMemory = 0;
+	SONG_JumpToDestinations_s *pDestination;
+	int bHasDestination = 0;
+	int iLoopLimit = 0;
+
+	song_iTokenIndex ++;
+
+	do {
+
+		// Limit the loop runs
+		iLoopLimit ++;
+
+		// destination reached?
+		if (song_iTokenIndex == song_iPlayUntil)
+		{
+			song_iPlayUntil = SONG_NO_JMP_DEST;
+			if (song_iContinueAt != SONG_NO_JMP_DEST)
+			{
+				song_iTokenIndex = song_iContinueAt;
+				song_iContinueAt = SONG_NO_JMP_DEST;
+
+				//Continue with single repeats
+				song_bWithRepeat = 1;
+			}
+		}
+
+		// Index out of range?
+		if (song_iTokenIndex >= song_iTokenLen)
+		{
+			return song_endToken;
+		}
+
+		// Get the next token
+		stToken = song_stTokens[song_iTokenIndex];
+
+		// Was it a jump?
+		if (stToken.stJump.u1_isJump)
+		{
+			// Reference to the memory
+			if (stToken.stJump.u8_jumpToMemory != SONG_NO_JMP_REF)
+			{
+				pMemory = &song_stJMemory[stToken.stJump.u8_jumpToMemory];
+				bHasMemory = 1;
+			}
+			// Reference to the destination
+			if (stToken.stJump.u8_jumpToDestinations != SONG_NO_JMP_REF)
+			{
+				pDestination = &song_stJDestinations[stToken.stJump.u8_jumpToDestinations];
+				bHasDestination = 1;
+			}
+
+			// It's a single repeat with or without switch
+			if (stToken.stJump.u3_JumpType == SONG_J_REPEAT && bHasMemory && bHasDestination)
+			{
+				// Was it the first run, then we repeat
+				if (((!stToken.stJump.u1_isSwitch && pMemory->u8Runs == 0)
+						|| (stToken.stJump.u1_isSwitch && !song_bSwitchSet))
+					&& song_bWithRepeat)
+				{
+					song_iTokenIndex = pDestination->u10_jumpTo;
+				}
+				else
+				{
+					// go further
+					song_iTokenIndex ++;
+				}
+
+				// Count the repeats up to 2
+				pMemory->u8Runs ++;
+				if (pMemory->u8Runs >=2)
+				{
+					pMemory->u8Runs = 0;
+				}
+			}
+			// It's a "fine"
+			else if (stToken.stJump.u3_JumpType == SONG_J_FINE)
+			{
+				// Was there a D.x. al fine?
+				if (song_bIsFine)
+				{
+					// Then we stop it
+					return song_endToken;
+				}
+				else
+				{
+					// go further
+					song_iTokenIndex ++;
+				}
+
+				// Count the repeats up to 2
+				pMemory->u8Runs ++;
+				if (pMemory->u8Runs >=2)
+				{
+					pMemory->u8Runs = 0;
+				}
+			}
+			// It's a volta 1
+			else if (stToken.stJump.u3_JumpType == SONG_J_VOLTA1 && bHasMemory && bHasDestination)
+			{
+				// Was it the first run, then we repeat
+				if (pMemory->u8Runs != 0)
+				{
+					song_iTokenIndex = pDestination->u10_jumpTo;
+				}
+				else
+				{
+					// go further
+					song_iTokenIndex ++;
+				}
+
+				// Count the repeats up to 2
+				pMemory->u8Runs ++;
+				if (pMemory->u8Runs >=2)
+				{
+					pMemory->u8Runs = 0;
+				}
+			}
+			// It's a general jump
+			else if (stToken.stJump.u3_JumpType == SONG_J_JUMP && bHasMemory && bHasDestination)
+			{
+				// Do jumps only one time
+				if (pMemory->u8Runs == 0)
+				{
+					// Go to fine
+					if (stToken.stJump.u1_alFine)
+					{
+						song_bIsFine = 1;
+					}
+
+					// With repeat or not?
+					song_bWithRepeat = stToken.stJump.u1_withRepeat;
+
+					// Jump
+					song_iTokenIndex = pDestination->u10_jumpTo;
+					song_iPlayUntil = pDestination->u10_playUntil;
+					song_iContinueAt = pDestination->u10_continueAt;
+
+				}
+
+				// Count up
+				pMemory->u8Runs ++;
+				if (pMemory->u8Runs < 100)
+				{
+					pMemory->u8Runs ++;
+				}
+			}
+			else
+			{
+				PRINTF_printf("Error reading a jump token");
+				CONSOLE_Prompt();
+			}
+
+			// it was a jump, so we get the next token again
+			if (song_iTokenIndex >= song_iTokenLen)
+			{
+				return song_endToken;
+			}
+			stToken = song_stTokens[song_iTokenIndex];
+		}
+	} while (stToken.stJump.u1_isJump && iLoopLimit < 10);
+
+	return stToken;
 }
 
 /**
@@ -202,6 +408,7 @@ static int SONG_DecodeStart(char* sLine)
 	}
 
 	song_iTokenLen = 0;
+	song_bHasSwitch = 0;
 	return 0;
 }
 
@@ -275,6 +482,22 @@ static int SONG_DecodeCheckSign(char* sLine, int pos, char c)
 	return 0;
 }
 
+/**
+ * Adds an END marker at the end of all chords
+ *
+ */
+static void SONG_AddEnd()
+{
+	// it was a jump
+	song_stTokens[song_iTokenLen].stJump.u1_isJump = 1;
+	song_stTokens[song_iTokenLen].stJump.u3_JumpType = SONG_END;
+	song_stTokens[song_iTokenLen].stJump.u1_isSwitch = 0;
+	song_stTokens[song_iTokenLen].stJump.u1_alFine = 0;
+	song_stTokens[song_iTokenLen].stJump.u1_withRepeat = 0;
+	song_stTokens[song_iTokenLen].stJump.u8_jumpToDestinations = SONG_NO_JMP_REF;
+	song_stTokens[song_iTokenLen].stJump.u8_jumpToMemory = SONG_NO_JMP_REF;
+	song_iTokenLen++;
+}
 
 
 /**
@@ -385,6 +608,7 @@ static int SONG_DecodeLine(char* sLine)
 		if (sLine[6]== 'S')
 		{
 			bIsSwitch = 1;
+			song_bHasSwitch = 1;
 		}
 		else if (sLine[6]== ' ')
 		{
@@ -513,7 +737,9 @@ static int SONG_DecodeLine(char* sLine)
 		song_stTokens[song_iTokenLen].stJump.u8_jumpToDestinations = song_iJDestinationLen;
 		song_iJDestinationLen++;
 
-		song_stTokens[song_iTokenLen].stJump.u8_jumpToMemory = SONG_NO_JMP_REF;
+		song_stTokens[song_iTokenLen].stJump.u8_jumpToMemory = song_iJMemoryLen;
+		song_iJMemoryLen ++;
+
 	}
 	else
 	{
@@ -521,8 +747,8 @@ static int SONG_DecodeLine(char* sLine)
 	}
 
 	song_iTokenLen++;
-	// Check range
-	if (song_iTokenLen >= 1024)
+	// Check range keep one free place for the END marker
+	if (song_iTokenLen >= (1024-2))
 	{
 		return (SONG_DecodeError("Too many tokens"));
 	}
@@ -619,6 +845,9 @@ static int SONG_Load(int iSong)
 	}
 
 	ERRORHANDLER_ResetError(ERROR_IN_BBB_FILE);
+
+	SONG_AddEnd();
+
 	PRINTF_printf("File %s loaded successfully", sFilename);
 	CONSOLE_Prompt();
 
@@ -627,22 +856,6 @@ static int SONG_Load(int iSong)
 }
 
 
-/**
- * Turn on/off the blue LED if the selected song was loaded
- *
- */
-static void SONG_StatusLED()
-{
-	// Turn on/off the blue LED
-	if (song_bSongLoaded)
-	{
-		HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_SET);
-	}
-	else
-	{
-		HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_RESET);
-	}
-}
 
 /**
  * Select a song from 1 .. 9
@@ -652,11 +865,6 @@ void SONG_Select(int iSong)
 {
 	// Has it changed?
 	song_bSelectedChanged = song_iSongSelected != iSong;
-	// Update the LED
-	if (song_bSelectedChanged)
-	{
-		SONG_StatusLED();
-	}
 
 	// Update it
 	song_iSongSelected = iSong;

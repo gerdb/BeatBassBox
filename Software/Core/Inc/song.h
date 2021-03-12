@@ -32,7 +32,7 @@
 
 typedef enum
 {
-	SONG_J_REPEAT, SONG_J_FINE, SONG_J_VOLTA1, SONG_J_JUMP, SONG_J_END
+	SONG_J_REPEAT, SONG_J_FINE, SONG_J_VOLTA1, SONG_J_JUMP, SONG_END
 } SONG_JumpType_e;
 
 // One entry with jump destinations
@@ -84,13 +84,17 @@ typedef __PACKED_STRUCT
 
 
 /* Global variables ----------------------------------------------------------*/
-
+extern char song_sTitle[];
+extern int song_bHasSwitch;
+extern int song_bSwitchSet;
 
 /* Function prototypes -------------------------------------------------------*/
 void SONG_Init();
 void SONG_Task1ms();
 void SONG_Select(int iSong);
 int SONG_Loaded();
+void SONG_Start();
+SONG_Token_s SONG_GetNext();
 
 
 
