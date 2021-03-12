@@ -22,6 +22,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "printf.h"
 #include "console.h"
+#include "bass.h"
 #include "song.h"
 #include "player.h"
 #include "errorhandler.h"
@@ -153,7 +154,8 @@ void PLAYER_Task1ms()
 				}
 				else
 				{
-					PRINTF_printf("%d ", player_stCurrentToken.stBassBeat.u6_Bass);
+					BASS_Play(player_stCurrentToken.stBassBeat.u6_Bass,
+							player_stCurrentToken.stBassBeat.u1_Articulated);
 					player_iDelayNext = player_stCurrentToken.stBassBeat.u5_Duration;
 				}
 			}

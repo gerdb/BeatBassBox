@@ -33,6 +33,7 @@
 /* USER CODE BEGIN Includes */
 #include "frqdetect.h"
 #include "tmc5160.h"
+#include "bass.h"
 #include "song.h"
 #include "player.h"
 #include "com.h"
@@ -117,6 +118,7 @@ int main(void)
   CONSOLE_Init();
   FRQDETECT_Init();
   TMC5160_Init();
+  BASS_Init();
   SONG_Init();
   PLAYER_Init();
 
@@ -131,6 +133,7 @@ int main(void)
 		  // 1ms Tasks
   		  FRQDETECT_Task1ms();
 	  	  COM_RxBufferTask();
+  		  BASS_Task1ms();
   		  SONG_Task1ms();
   		  PLAYER_Task1ms();
 
