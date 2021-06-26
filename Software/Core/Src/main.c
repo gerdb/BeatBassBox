@@ -135,6 +135,7 @@ int main(void)
 		  // 1ms Tasks
   		  FRQDETECT_Task1ms();
 	  	  COM_RxBufferTask();
+	  	  TMC5160_Task1ms();
   		  BASS_Task1ms();
   		  HAMMER_Task1ms();
   		  SONG_Task1ms();

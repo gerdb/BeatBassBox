@@ -34,6 +34,7 @@
 #define TMC5160_IHOLD_IRUN	0x10
 #define TMC5160_TPOWERDOWN	0x11
 #define TMC5160_RAMPMODE	0x20
+#define TMC5160_XACTUAL		0x21
 #define TMC5160_VSTART		0x23
 #define TMC5160_A1			0x24
 #define TMC5160_V1			0x25
@@ -43,11 +44,25 @@
 #define TMC5160_D1			0x2A
 #define TMC5160_VSTOP		0x2B
 #define TMC5160_XTARGET		0x2D
+#define TMC5160_SW_MODE		0x34
+#define TMC5160_RAMP_STAT	0x35
+#define TMC5160_XLATCH		0x36
 #define TMC5160_ENC_CONST	0x3A
 #define TMC5160_CHOPCONF	0x6C
 #define TMC5160_PWMCONF		0x70
 
+#define TMC_VMAX			200000
+
 /* Types ---------------------------------------------------------------------*/
+
+typedef enum
+{
+	REF_NO,
+	REF_START,
+	REF_MOVE_R,
+	REF_MOVE_REF,
+	REF_FINISH
+} TMC5160_Ref_e;
 
 // TMC5160 registers
 typedef union
@@ -154,6 +169,51 @@ typedef union
 
 typedef union
 {
+	struct __packed
+	{
+		uint8_t		STOP_L_ENABLE:1;
+		uint8_t		STOP_R_ENABLE:1;
+		uint8_t		POL_STOP_L:1;
+		uint8_t		POL_STOP_R:1;
+		uint8_t		SWAP_LR:1;
+		uint8_t		LATCH_L_ACTIVE:1;
+		uint8_t		LATCH_L_INACTIVE:1;
+		uint8_t		LATCH_R_ACTIVE:1;
+		uint8_t		LATCH_R_INACTIVE:1;
+		uint8_t		EN_LATCH_ENCODER:1;
+		uint8_t		SG_STOP:1;
+		uint8_t		EN_SOFTSTOP:1;
+		uint32_t	:21;
+	};
+	uint32_t u32;
+} TMC5160_REG_SW_MODE;
+
+typedef union
+{
+	struct __packed
+	{
+		uint8_t		STATUS_STOP_L:1;
+		uint8_t		STATUS_STOP_R:1;
+		uint8_t		STATUS_LATCH_L:1;
+		uint8_t		STATUS_LATCH_R:1;
+		uint8_t		EVENT_STOP_L:1;
+		uint8_t		EVENT_STOP_R:1;
+		uint8_t		EVENT_STOP_SG:1;
+		uint8_t		EVENT_POS_REACHED:1;
+		uint8_t		VELOCITY_REACHED:1;
+		uint8_t		POSITION_REACHED:1;
+		uint8_t		VZERO:1;
+		uint8_t		T_ZEROWAIT_ACTIVE:1;
+		uint8_t		SECOND_MOVE:1;
+		uint8_t		STATUS_SG:1;
+		uint32_t	:18;
+	};
+	uint32_t u32;
+} TMC5160_REG_RAMP_STAT;
+
+
+typedef union
+{
 	int32_t ENC_CONST;
 	uint32_t u32;
 } TMC5160_REG_ENC_CONST;
@@ -234,5 +294,6 @@ void TMC5160_Write(uint8_t u8Addr, uint32_t u32Data);
 void TMC5160_Read(uint8_t u8Addr);
 void TMC5160_ReadAll();
 void TMC5160_MoveTo(int32_t s32Position);
+void TMC5160_Ref();
 
 #endif /* __TMC5160_H__ */

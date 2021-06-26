@@ -33,6 +33,8 @@ TMC5160_SPI_TX_s tmc_sSpiDMATxBuff;
 TMC5160_SPI_RX_s tmc_sSpiDMARxBuff;
 int tmc_bTransmitting;
 uint8_t tmc_u8LastReadAllAddr;
+TMC5160_Ref_e tmc_eRefState;
+int tmc_iRefCnt;
 
 /* Prototypes of static function ---------------------------------------------*/
 static void TMC5160_WriteData(uint8_t u8Addr, uint32_t u32Data);
@@ -50,12 +52,15 @@ static void TMC5160_ReadAllNext(uint8_t u8Addr);
  */
 void TMC5160_Init()
 {
+	tmc_eRefState = REF_NO;
+
 	uint8_t u8Version;
 	TMC5160_REG_GCONF unGconf = {0};
 	TMC5160_REG_SHORT_CONF unShortConf = {0};
 	TMC5160_REG_DRV_CONF unDrvConf = {0};
 	TMC5160_REG_IHOLD_IRUN unIHoldIRun = {0};
 	TMC5160_REG_TPOWERDOWN unTPowerDown = {0};
+	TMC5160_REG_SW_MODE unSWMode = {0};
 	TMC5160_REG_ENC_CONST enEncConst = {0};
 	TMC5160_REG_CHOPCONF enChopConf = {0};
 	TMC5160_REG_PWMCONF enPWMConf = {0};
@@ -93,6 +98,9 @@ void TMC5160_Init()
 
 	unTPowerDown.TPOWERDOWN = 10;
 
+	unSWMode.STOP_L_ENABLE = 1;
+	unSWMode.LATCH_L_ACTIVE = 1;
+
 	enEncConst.ENC_CONST = 0x00010000;
 
 	enChopConf.TOFF = 3;
@@ -114,19 +122,24 @@ void TMC5160_Init()
 	TMC5160_WriteData(TMC5160_DRVCONF, unDrvConf.u32);		// DRVCONF
 	TMC5160_WriteData(TMC5160_IHOLD_IRUN, unIHoldIRun.u32);	// IHOLD_IRUN
 	TMC5160_WriteData(TMC5160_TPOWERDOWN, unTPowerDown.u32);// TPOWERDOWN
+	TMC5160_WriteData(TMC5160_SW_MODE	, unSWMode.u32);	// SW_MODE
 	TMC5160_WriteData(TMC5160_ENC_CONST, enEncConst.u32);	// ENC_CONST
 	TMC5160_WriteData(TMC5160_CHOPCONF, enChopConf.u32);	// CHOPCONF
 	TMC5160_WriteData(TMC5160_PWMCONF, enPWMConf.u32);		// PWMCONF
 
 	TMC5160_WriteData(TMC5160_A1, 1000);		// A1
-	TMC5160_WriteData(TMC5160_V1, 0);		// V1
+	TMC5160_WriteData(TMC5160_V1, 0);			// V1
 	TMC5160_WriteData(TMC5160_AMAX, 40000);		// AMAX
-	TMC5160_WriteData(TMC5160_VMAX, 200000);	// VMAX
+	TMC5160_WriteData(TMC5160_VMAX, TMC_VMAX);	// VMAX
 	TMC5160_WriteData(TMC5160_DMAX, 40000);		// DMAX
 	TMC5160_WriteData(TMC5160_D1, 1400);		// D1
 	TMC5160_WriteData(TMC5160_VSTART, 10);		// VSTART
 	TMC5160_WriteData(TMC5160_VSTOP, 10);		// VSTOP
 	TMC5160_WriteData(TMC5160_RAMPMODE, 0);		// Target position move
+
+	// Reset the position
+	TMC5160_WriteData(TMC5160_XACTUAL, 0);
+	TMC5160_WriteData(TMC5160_XTARGET, 0);
 
 	// Enable driver
 	HAL_GPIO_WritePin(DRV_ENN_GPIO_Port, DRV_ENN_Pin, GPIO_PIN_RESET);
@@ -140,6 +153,64 @@ void TMC5160_Init()
  */
 void TMC5160_Task1ms()
 {
+	switch (tmc_eRefState)
+	{
+	case REF_NO:
+		break;
+	case REF_START:
+		TMC5160_WriteData(TMC5160_VMAX, 4000 );
+		TMC5160_ReadData(TMC5160_RAMP_STAT);
+		tmc_iRefCnt = 0;
+		if (((TMC5160_REG_RAMP_STAT)TMC5160_ReadData(TMC5160_RAMP_STAT)).STATUS_STOP_L)
+		{
+			// We are in stop position, so move right a little bit right
+			TMC5160_WriteData(TMC5160_XTARGET, 1000);
+		}
+		else
+		{
+			tmc_iRefCnt = 1000;
+		}
+
+		tmc_eRefState = REF_MOVE_R;
+		break;
+	case REF_MOVE_R:
+		if (tmc_iRefCnt > 1000)
+		{
+			TMC5160_WriteData(TMC5160_XTARGET, -30000);
+			TMC5160_ReadData(TMC5160_RAMP_STAT);
+			tmc_iRefCnt = 0;
+			tmc_eRefState = REF_MOVE_REF;
+		}
+		break;
+	case REF_MOVE_REF:
+		if (((TMC5160_REG_RAMP_STAT)TMC5160_ReadData(TMC5160_RAMP_STAT)).VZERO)
+		{
+			tmc_iRefCnt = 0;
+			TMC5160_WriteData(TMC5160_RAMPMODE, 3);		// Hold mode
+			tmc_eRefState = REF_FINISH;
+		}
+		break;
+	case REF_FINISH:
+		if (tmc_iRefCnt > 1000)
+		{
+			TMC5160_ReadData(TMC5160_XACTUAL);
+			int iXactual = TMC5160_ReadData(TMC5160_XACTUAL);
+			TMC5160_ReadData(TMC5160_XLATCH);
+			int iXlatch = TMC5160_ReadData(TMC5160_XLATCH);
+			TMC5160_WriteData(TMC5160_XACTUAL, iXactual- iXlatch);
+
+			TMC5160_WriteData(TMC5160_VMAX, TMC_VMAX );
+			TMC5160_WriteData(TMC5160_RAMPMODE, 0);		// Position mode
+			TMC5160_WriteData(TMC5160_XTARGET, 10000);
+			tmc_eRefState = REF_NO;
+		}
+
+		break;
+	default:
+		tmc_eRefState = REF_NO;
+		break;
+	}
+	tmc_iRefCnt++;
 }
 
 /**
@@ -198,7 +269,7 @@ static uint32_t TMC5160_ReadData(uint8_t u8Addr)
 			(uint8_t*)&tmc_sSpiDMARxBuff,
 			5);
 
-	// For read we wailt also until last transmission is completed
+	// For read we wait also until last transmission is completed
 	while (tmc_bTransmitting);
 
 	return __REV(tmc_sSpiDMARxBuff.u32Data);
@@ -213,8 +284,24 @@ static uint32_t TMC5160_ReadData(uint8_t u8Addr)
  */
 void TMC5160_MoveTo(int32_t s32Position)
 {
+	if (tmc_eRefState != REF_NO)
+		return;
+
 	TMC5160_WriteData(TMC5160_XTARGET, s32Position);
 }
+
+/**
+ * Starts a reference move
+ *
+ * \param s32Position Destination position
+ *
+ *
+ */
+void TMC5160_Ref()
+{
+	tmc_eRefState = REF_START;
+}
+
 /**
  * Writes data to the TMC5160
  *

@@ -162,6 +162,17 @@ static int CONSOLE_ProcessCmd(void)
 			return CONSOLE_ERROR_PAR_COUNT;
 		}
 	}
+	else if (CONSOLE_IsCmd("TMC.REF"))
+	{
+		if (console_iPars == 0)
+		{
+			TMC5160_Ref();
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
 
 
 	else if (CONSOLE_IsCmd("FRQD.DEBUG"))

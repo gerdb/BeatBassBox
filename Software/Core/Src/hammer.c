@@ -44,7 +44,7 @@ void HAMMER_Init()
 {
 	ham_iTimer = 10000;
 	ham_iDuration1 = 40;
-	ham_iTime2 = 100;
+	ham_iTime2 = 80;
 	ham_iDuration2 = 20;
 }
 
