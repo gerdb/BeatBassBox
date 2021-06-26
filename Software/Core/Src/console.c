@@ -25,6 +25,7 @@
 #include "console.h"
 #include "frqdetect.h"
 #include "tmc5160.h"
+#include "hammer.h"
 
 /* Variables -----------------------------------------------------------------*/
 char console_acLine[CONSOLE_LINE_LENGTH];
@@ -38,6 +39,7 @@ int console_iPars;
 static void CONSOLE_ProcessLine(void);
 static int CONSOLE_ProcessCmd(void);
 static int CONSOLE_IsCmd(char *cmd);
+static void CONSOLE_RepeatLast(void);
 
 /* Functions -----------------------------------------------------------------*/
 /**
@@ -86,6 +88,33 @@ static int CONSOLE_ProcessCmd(void)
 		if (console_iPars == 2)
 		{
 			//SERVO_Set(console_as32Pars[0],console_as32Pars[1]);
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
+	else if (CONSOLE_IsCmd("HAMMER.DRUM"))
+	{
+		if (console_iPars == 0)
+		{
+			HAMMER_Drum();
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
+	else if (CONSOLE_IsCmd("HAMMER.PAR"))
+	{
+		if (console_iPars == 0)
+		{
+			CONSOLE_NewLine();
+			HAMMER_ParGet();
+		}
+		else if (console_iPars == 2)
+		{
+			HAMMER_ParSet(console_as32Pars[0], console_as32Pars[1]);
 		}
 		else
 		{
@@ -367,6 +396,27 @@ void CONSOLE_Prompt(void)
 	COM_PutByte('>');
 }
 
+
+/**
+ * Repeat the last command
+ *
+ */
+static void CONSOLE_RepeatLast(void)
+{
+	console_iLinePtr = console_iCmdLen;
+
+	if (console_acLine[console_iCmdLen] == ' ')
+	{
+		console_iLinePtr++;
+	}
+
+	for (int i = 0; i < console_iLinePtr; i++)
+	{
+		COM_PutByte(console_acLine[i]);
+	}
+
+}
+
 /**
  * Prepares a new new line
  *
@@ -391,18 +441,7 @@ void CONSOLE_NewChar(char c)
 				{
 					if (bModified == 0)
 					{
-						console_iLinePtr = console_iCmdLen;
-
-						if (console_acLine[console_iCmdLen] == ' ')
-						{
-							console_iLinePtr++;
-						}
-
-						for (int i = 0; i < console_iLinePtr; i++)
-						{
-							COM_PutByte(console_acLine[i]);
-						}
-
+						CONSOLE_RepeatLast();
 					}
 				}
 			}
@@ -419,6 +458,10 @@ void CONSOLE_NewChar(char c)
 	}
 	else if (c == '\r')
 	{
+		if (console_iLinePtr == 0)
+		{
+			CONSOLE_RepeatLast();
+		}
 		bModified = 0;
 		CONSOLE_ProcessLine();
 	}
