@@ -201,7 +201,7 @@ void TMC5160_Task1ms()
 
 			TMC5160_WriteData(TMC5160_VMAX, TMC_VMAX );
 			TMC5160_WriteData(TMC5160_RAMPMODE, 0);		// Position mode
-			TMC5160_WriteData(TMC5160_XTARGET, 10000);
+			TMC5160_WriteData(TMC5160_XTARGET, 6800);
 			tmc_eRefState = REF_NO;
 		}
 

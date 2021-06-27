@@ -28,6 +28,7 @@
 #include "adc.h"
 #include "dac.h"
 #include <string.h>
+#include <stdlib.h>
 
 /* Variables -----------------------------------------------------------------*/
 uint32_t frqd_u32ADCDMABuff[8];
@@ -37,10 +38,12 @@ int frqd_iRdPtr;
 FRQD_blockbuf_t frqd_uBlockBuf[4];
 float frqd_fFiltF;
 float frqd_fFiltD;
+float frqd_fFiltOut;
 float frqd_fFiltZ1;
 float frqd_fFiltZ2;
 float frqd_fFiltHPLP;
 float frqd_fFiltHP;
+int	 frqd_iFiltIsBp;
 float frqd_fEnvPos;
 float frqd_fEnvNeg;
 float frqd_fEnvThresh;
@@ -48,10 +51,18 @@ float frqd_fEnvDecay;
 int frqd_iPulse;
 int frqd_iPerCnt;
 int frqd_iPer;
+int frqd_iLastPer;
 int frqd_iDebug;
 int frqd_iAmpl;
 int frqd_iAmplMax;
 int frqd_iMinAmpl;
+int frqd_iMaxFrq;
+int frqd_iMinPer;
+int frqd_iPeriodsCnt;
+int frqd_iPeriodsSum;
+volatile int testa[256];
+int testacnt;
+
 
 /* Prototypes of static function ---------------------------------------------*/
 __STATIC_INLINE void FRQDETECT_Process(uint16_t ui16Sample);
@@ -70,16 +81,21 @@ void FRQDETECT_Init()
 	frqd_iWrPtr = 0;
 	frqd_iRdPtr = 0;
 
-	frqd_fFiltF = 500.0f * FRQD_2PIOVERF;
-	frqd_fFiltD = 0.5f;
+	frqd_iPeriodsCnt = 0;
+	frqd_iPeriodsSum = 0;
 
+	// Init filter with 500Hz and 0.5Damping, Lowpass
+	FRQDETECT_SetFilter(500, 50, 0);
+
+	// Init the detection with 73mV, 80% and 12ms for
 	// Minimal amplitude to measure the frequency
-	frqd_iMinAmpl = 100.0f;
 	// Envelop threshold
-	frqd_fEnvThresh = 0.8f;
 	// Envelop decay
-	frqd_fEnvDecay = 0.005f;
+	FRQDETECT_SetDetection(73, 80, 12);
 
+	// Set the maximum frequency
+	// up to 1000Hz
+	FRQDETECT_SetMaxFrq(1000);
 
 	// Workaround. See ERRATA. It is necessary to switch on the DAC clock
 	__HAL_RCC_DAC_CLK_ENABLE();
@@ -102,6 +118,22 @@ int FRQDETECT_IsValid()
 
 
 /**
+ * Returns the current mean frequency or 0.0f if no frequency is available
+ *
+ * \return frequency in Hz
+ *
+ */
+float FRQDETECT_GetMeanFrequency()
+{
+	if (frqd_iPeriodsCnt < 10)
+	{
+		return 0.0f;
+	}
+
+	return FRQD_SAMPLE_FRQ * frqd_iPeriodsCnt / frqd_iPeriodsSum;
+}
+
+/**
  * Returns the current frequency or 0.0f if no frequency is available
  *
  * \return frequency in Hz
@@ -115,6 +147,20 @@ float FRQDETECT_GetFrequency()
 	}
 
 	return FRQD_SAMPLE_FRQ / frqd_iPer;
+}
+
+
+/**
+ * Starts a new frequency measurement
+ *
+ *
+ */
+void FRQDETECT_Start()
+{
+	frqd_iLastPer = 0;
+	frqd_iPeriodsCnt = 0;
+	frqd_iPeriodsSum = 0;
+	testacnt = 0;
 }
 
 /**
@@ -133,10 +179,12 @@ void FRQDETECT_SetDebug(int iDebug)
  *
  * \param iFrq the frequency in Hz
  * \param iDamp the damping in %
+ * \param isBandpass flag 1= bandpass, 0 = lowpass
  *
  */
-void FRQDETECT_SetFilter(int iFrq, int iDamp)
+void FRQDETECT_SetFilter(int iFrq, int iDamp, int isBandpass)
 {
+	frqd_iFiltIsBp = isBandpass;
 	frqd_fFiltF = ((float)iFrq) * FRQD_2PIOVERF;
 	frqd_fFiltD = ((float)iDamp)*0.01f;
 }
@@ -164,15 +212,37 @@ void FRQDETECT_SetDetection(int iMinAmpl, int iEnvThresh, int iEnvDecay)
 }
 
 /**
+ * Sets the limits for a valid frequency
+ *
+ * \param iFrq the maximum frequency in Hz
+ *
+ */
+void FRQDETECT_SetMaxFrq(int iFrq)
+{
+	frqd_iMaxFrq = iFrq;
+	frqd_iMinPer = FRQD_SAMPLE_FRQ / frqd_iMaxFrq;
+}
+
+/**
  * Print the filter settings
  *
  */
 void FRQDETECT_PrintFilter()
 {
-	PRINTF_printf("%d(Hz), %d(%%)\r\n",
+	PRINTF_printf("%d(Hz), %d(%%), %d",
 			(int)(frqd_fFiltF * FRQD_FOVER2PI),
-			(int)(frqd_fFiltD * 100.0f)
+			(int)(frqd_fFiltD * 100.0f),
+			frqd_iFiltIsBp
 			);
+	if (frqd_iFiltIsBp)
+	{
+		PRINTF_printf("(Bandpass)\r\n");
+	}
+	else
+	{
+		PRINTF_printf("(Lowpass)\r\n");
+
+	}
 }
 /**
  * Print the detection settings
@@ -187,7 +257,16 @@ void FRQDETECT_PrintDetection()
 			);
 }
 
-
+/**
+ * Prints the maximum valid frequency
+ *
+ */
+void FRQDETECT_PrintMaxFrq()
+{
+	PRINTF_printf(".. %dHz\r\n",
+			frqd_iMaxFrq
+			);
+}
 
 /**
  * Processes on sample
@@ -202,15 +281,28 @@ __STATIC_INLINE void FRQDETECT_Process(uint16_t ui16Sample)
 	frqd_fFiltHP = ui16Sample - frqd_fFiltHPLP;
 	frqd_fFiltHPLP += frqd_fFiltHP * 0.0002f;
 
-	// Lowpass (bandpass)
+	// PT2 state variable filter
+	// https://www.earlevel.com/main/2003/03/02/the-digital-state-variable-filter/
 	frqd_fFiltZ2 += frqd_fFiltF * frqd_fFiltZ1;
 	frqd_fFiltZ1 += frqd_fFiltF * (frqd_fFiltHP - frqd_fFiltZ1 * frqd_fFiltD - frqd_fFiltZ2);
 
+	// Which output should be used?
+	if (frqd_iFiltIsBp)
+	{
+		// output is the bandpass
+		frqd_fFiltOut = frqd_fFiltZ1;
+	}
+	else
+	{
+		// output is the lowpass
+		frqd_fFiltOut = frqd_fFiltZ2;
+	}
+
 
 	// Positive envelope
-	if (frqd_fFiltZ2 > frqd_fEnvPos)
+	if (frqd_fFiltOut > frqd_fEnvPos)
 	{
-		frqd_fEnvPos = frqd_fFiltZ2;
+		frqd_fEnvPos = frqd_fFiltOut;
 		frqd_iAmpl = frqd_fEnvPos - frqd_fEnvNeg;
 	}
 	else
@@ -219,9 +311,9 @@ __STATIC_INLINE void FRQDETECT_Process(uint16_t ui16Sample)
 	}
 
 	// Negative envelope
-	if (frqd_fFiltZ2 < frqd_fEnvNeg)
+	if (frqd_fFiltOut < frqd_fEnvNeg)
 	{
-		frqd_fEnvNeg = frqd_fFiltZ2;
+		frqd_fEnvNeg = frqd_fFiltOut;
 		frqd_iAmpl = frqd_fEnvPos - frqd_fEnvNeg;
 	}
 	else
@@ -229,30 +321,47 @@ __STATIC_INLINE void FRQDETECT_Process(uint16_t ui16Sample)
 		frqd_fEnvNeg -= frqd_fEnvNeg * frqd_fEnvDecay;
 	}
 
-	// Schmitttrigger
-	if (frqd_fFiltZ2 > frqd_fEnvPos * frqd_fEnvThresh)
+	// Schmitt-Trigger
+	if (frqd_fFiltOut > frqd_fEnvPos * frqd_fEnvThresh)
 	{
 		// Rising edge
 		if (frqd_iPulse == 0)
 		{
-			// Count the period
-			if (frqd_iPerCnt < FRQD_MAXPER)
+			// Analyze only valid frequencies
+			if ( frqd_iPerCnt >= frqd_iMinPer )
 			{
 				// Amplitude large enough?
 				if (frqd_iAmpl > frqd_iMinAmpl)
 				{
 					frqd_iPer = frqd_iPerCnt;
+
+					// sum it, if it is like the old value
+					if (abs(frqd_iLastPer - frqd_iPer) < 50)
+					{
+						frqd_iPeriodsSum += frqd_iPer;
+						frqd_iPeriodsCnt++;
+					}
+					frqd_iLastPer = frqd_iPer;
+
+					if (testacnt < 256)
+					{
+						testa[testacnt] = frqd_iPer;
+					}
+					testacnt++;
 				}
 				else
 				{
 					frqd_iPer = 0;
 				}
+
+
+
+				frqd_iPerCnt = 0;
 			}
-			frqd_iPerCnt = 0;
 		}
 		frqd_iPulse = 1;
 	}
-	if (frqd_fFiltZ2 < frqd_fEnvNeg * frqd_fEnvThresh)
+	if (frqd_fFiltOut < frqd_fEnvNeg * frqd_fEnvThresh)
 	{
 		frqd_iPulse = 0;
 	}

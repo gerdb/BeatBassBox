@@ -27,6 +27,20 @@
 
 /* Defines -------------------------------------------------------------------*/
 
+/* Types -------------------------------------------------------------------*/
+typedef enum
+{
+	CALIB_NO,
+	CALIB_START,
+	CALIB_START_WAIT_REACHED,
+	CALIB_WAIT_FIRST,
+	CALIB_SINGLE,
+	CALIB_SINGLE_WAIT_REACHED,
+	CALIB_SINGLE_WAIT,
+	CALIB_FINISH
+} BASS_Calib_e;
+
+
 /* Global variables ----------------------------------------------------------*/
 
 
@@ -34,6 +48,6 @@
 void BASS_Init();
 void BASS_Task1ms();
 void BASS_Play(int iNote, int bIsArticulated);
-
+void BASS_StartCalib();
 
 #endif /* __BASS_H__ */

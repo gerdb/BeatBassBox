@@ -28,10 +28,11 @@
 
 /* Constants  ----------------------------------------------------------------*/
 
-#define FRQD_MAXPER 250 // 64Hz
+#define FRQD_MAXPER 1000 // 16Hz
 #define FRQD_SAMPLE_FRQ 16000.0f
 #define FRQD_FOVER2PI (FRQD_SAMPLE_FRQ / 6.283185f)
 #define FRQD_2PIOVERF (6.283185f / FRQD_SAMPLE_FRQ)
+#define FRQD_MAXPERCNT 99999
 
 /* Types ---------------------------------------------------------------------*/
 
@@ -56,14 +57,17 @@ typedef union
 void FRQDETECT_Init();
 void FRQDETECT_Task1ms();
 void FRQDETECT_Task100ms();
+void FRQDETECT_Start();
 float FRQDETECT_GetFrequency();
+float FRQDETECT_GetMeanFrequency();
 int FRQDETECT_IsValid();
 void FRQDETECT_SetDebug(int iDebug);
-void FRQDETECT_SetFilter(int iFrq, int iDamp);
+void FRQDETECT_SetFilter(int iFrq, int iDamp, int isBandpass);
 void FRQDETECT_SetDetection(int iMinAmpl, int iEnvThresh, int iEnvDecay);
+void FRQDETECT_SetMaxFrq(int iFrq);
 void FRQDETECT_PrintFilter();
 void FRQDETECT_PrintDetection();
-
+void FRQDETECT_PrintMaxFrq();
 
 
 

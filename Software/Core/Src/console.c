@@ -25,6 +25,7 @@
 #include "console.h"
 #include "frqdetect.h"
 #include "tmc5160.h"
+#include "bass.h"
 #include "hammer.h"
 
 /* Variables -----------------------------------------------------------------*/
@@ -193,11 +194,12 @@ static int CONSOLE_ProcessCmd(void)
 			CONSOLE_NewLine();
 			FRQDETECT_PrintFilter();
 		}
-		else if (console_iPars == 2)
+		else if (console_iPars == 3)
 		{
 			FRQDETECT_SetFilter(
 					console_as32Pars[0],
-					console_as32Pars[1]);
+					console_as32Pars[1],
+					console_as32Pars[2]);
 		}
 		else
 		{
@@ -217,6 +219,45 @@ static int CONSOLE_ProcessCmd(void)
 					console_as32Pars[0],
 					console_as32Pars[1],
 					console_as32Pars[2]);
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
+	else if (CONSOLE_IsCmd("FRQD.MAXFRQ"))
+	{
+		if (console_iPars == 0)
+		{
+			CONSOLE_NewLine();
+			FRQDETECT_PrintMaxFrq();
+		}
+		else if (console_iPars == 1)
+		{
+			FRQDETECT_SetMaxFrq(
+					console_as32Pars[0]);
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
+	else if (CONSOLE_IsCmd("FRQD.START"))
+	{
+		if (console_iPars == 0)
+		{
+			FRQDETECT_Start();
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
+	else if (CONSOLE_IsCmd("BASS.CALIB"))
+	{
+		if (console_iPars == 0)
+		{
+			BASS_StartCalib();
 		}
 		else
 		{
