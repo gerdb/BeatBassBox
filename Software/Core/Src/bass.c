@@ -26,6 +26,7 @@
 #include "hammer.h"
 #include "tmc5160.h"
 #include "frqdetect.h"
+#include "approximation.h"
 #include "bass.h"
 #include "errorhandler.h"
 
@@ -60,6 +61,7 @@ void BASS_Task1ms()
 	case CALIB_NO:
 		break;
 	case CALIB_START:
+		APPROX_Init();
 		bass_iCalibPos = 18000;
 		TMC5160_MoveTo(bass_iCalibPos);
 		bass_iCalibCnt = 0;
@@ -130,6 +132,7 @@ void BASS_Task1ms()
 			bass_fFrq = FRQDETECT_GetMeanFrequency();
 			if (bass_fFrq > 16.0f)
 			{
+				APPROX_Point(bass_iCalibPos, bass_fFrq);
 				PRINTF_printf("%d,%d\r\n",
 							bass_iCalibPos,
 							(int)(bass_fFrq)
@@ -145,6 +148,8 @@ void BASS_Task1ms()
 		}
 		break;
 	case CALIB_FINISH:
+		APPROX_Approximate();
+		APPROX_Calc(100.0f);
 		FRQDETECT_SetFilter(500, 50, 0);
 		FRQDETECT_SetMaxFrq(500);
 		TMC5160_MoveTo(6000);

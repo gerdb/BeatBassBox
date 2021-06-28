@@ -123,6 +123,7 @@ int main(void)
   HAMMER_Init();
   SONG_Init();
   PLAYER_Init();
+  APPROX_Init();
 
   /* USER CODE END 2 */
 
