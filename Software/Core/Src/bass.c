@@ -29,12 +29,14 @@
 #include "approximation.h"
 #include "bass.h"
 #include "errorhandler.h"
+#include <math.h>
 
 /* Variables -----------------------------------------------------------------*/
 BASS_Calib_e bass_eCalib;
 int bass_iCalibCnt;
 int bass_iCalibPos;
 float bass_fFrq;
+float bass_fNoteFrqs[64];
 
 /* Local function prototypes -------------------------------------------------*/
 
@@ -48,6 +50,30 @@ float bass_fFrq;
 void BASS_Init()
 {
 	bass_eCalib = CALIB_NO;
+
+	int index;
+	// Fill the notes with its frequency
+	float fFrq = 0.0f;
+	for (int i=0; i <128; i++)
+	{
+		// is it an A?
+		if (((i-21) % 12) == 0)
+		{
+			int iOctave = (i-21) / 12 - 4;
+			fFrq = 440.0f * powf(2.f,(float)iOctave);
+		}
+		else
+		{
+			// frequency of chromatic scale
+			fFrq *= powf(2.f,1.f/12.f);
+		}
+		// Offset of -20 see also SONG_DecodeLine(..)
+		index = i-20;
+		if (index >= 0 && index <64)
+		{
+			bass_fNoteFrqs[index] = fFrq;
+		}
+	}
 }
 
 /**
@@ -61,11 +87,18 @@ void BASS_Task1ms()
 	case CALIB_NO:
 		break;
 	case CALIB_START:
-		APPROX_Init();
-		bass_iCalibPos = 18000;
-		TMC5160_MoveTo(bass_iCalibPos);
-		bass_iCalibCnt = 0;
-		bass_eCalib = CALIB_START_WAIT_REACHED;
+		TMC5160_Ref();
+		bass_eCalib = CALIB_WAIT_REF;
+		break;
+	case CALIB_WAIT_REF:
+		if (!TMC5160_IsReferencing())
+		{
+			APPROX_Init();
+			bass_iCalibPos = 18000;
+			TMC5160_MoveTo(bass_iCalibPos);
+			bass_iCalibCnt = 0;
+			bass_eCalib = CALIB_START_WAIT_REACHED;
+		}
 		break;
 	case CALIB_START_WAIT_REACHED:
 		bass_iCalibCnt ++;
@@ -74,7 +107,6 @@ void BASS_Task1ms()
 			bass_iCalibCnt = 0;
 			FRQDETECT_SetFilter(500, 50, 0);
 			FRQDETECT_SetMaxFrq(500);
-			HAMMER_ParSet(1,70);
 			FRQDETECT_Start();
 			HAMMER_Drum();
 			bass_eCalib = CALIB_WAIT_FIRST;
@@ -119,7 +151,6 @@ void BASS_Task1ms()
 			bass_iCalibCnt = 0;
 			FRQDETECT_SetFilter((int)bass_fFrq, 50, 1);
 			FRQDETECT_SetMaxFrq((int)(bass_fFrq*1.5f));
-			HAMMER_ParSet(1,80-(bass_iCalibPos-8000)/1000);
 			FRQDETECT_Start();
 			HAMMER_Drum();
 			bass_eCalib = CALIB_SINGLE_WAIT;
@@ -177,7 +208,16 @@ void BASS_Play(int iNote, int bIsArticulated)
 {
 	if (iNote > 0)
 	{
-		PRINTF_printf("%d ", iNote);
-		TMC5160_MoveTo(iNote * 200);
+		int iPos = APPROX_Calc(bass_fNoteFrqs[iNote]);
+		if (iPos > 6000 &&  iPos < 20000)
+		{
+			PRINTF_printf("%d ", iNote);
+			TMC5160_MoveTo(iPos);
+			HAMMER_Drum();
+		}
+		else
+		{
+			PRINTF_printf("Position out of range");
+		}
 	}
 }

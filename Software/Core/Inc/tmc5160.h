@@ -294,6 +294,8 @@ void TMC5160_Write(uint8_t u8Addr, uint32_t u32Data);
 void TMC5160_Read(uint8_t u8Addr);
 void TMC5160_ReadAll();
 void TMC5160_MoveTo(int32_t s32Position);
+int TMC5160_GetPos();
 void TMC5160_Ref();
+int TMC5160_IsReferencing();
 
 #endif /* __TMC5160_H__ */

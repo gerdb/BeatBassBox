@@ -35,6 +35,7 @@ int tmc_bTransmitting;
 uint8_t tmc_u8LastReadAllAddr;
 TMC5160_Ref_e tmc_eRefState;
 int tmc_iRefCnt;
+int tmc_iPosition=0;
 
 /* Prototypes of static function ---------------------------------------------*/
 static void TMC5160_WriteData(uint8_t u8Addr, uint32_t u32Data);
@@ -287,7 +288,20 @@ void TMC5160_MoveTo(int32_t s32Position)
 	if (tmc_eRefState != REF_NO)
 		return;
 
+	tmc_iPosition = s32Position;
 	TMC5160_WriteData(TMC5160_XTARGET, s32Position);
+}
+
+/**
+ * Gets the current position
+ *
+ * \return the position
+ *
+ *
+ */
+int TMC5160_GetPos()
+{
+	return tmc_iPosition;
 }
 
 /**
@@ -300,6 +314,18 @@ void TMC5160_MoveTo(int32_t s32Position)
 void TMC5160_Ref()
 {
 	tmc_eRefState = REF_START;
+}
+
+/**
+ * Gets the reference state
+ *
+ * \return true, if referencing
+ *
+ *
+ */
+int TMC5160_IsReferencing()
+{
+	return (tmc_eRefState != REF_NO);
 }
 
 /**

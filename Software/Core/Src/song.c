@@ -123,6 +123,27 @@ void SONG_Task1ms()
 	}
 }
 
+
+/**
+ * Gets the period of the song
+ *
+ * \return period of one duration step
+ *
+ */
+int SONG_GetPeriod()
+{
+	if (song_iTempo == 0)
+	{
+		// default to prevent division by zero
+		return 100;
+	}
+
+	// 1/4 note has 12 duration steps
+	// = 60/TEMPO * 1000ms / 12
+	// = 5000 / TEMPO
+	return 5000 / song_iTempo;
+}
+
 /**
  * Resets the song pointer and all memory entries to start a new song
  *
@@ -296,6 +317,10 @@ SONG_Token_s SONG_GetNext()
 				{
 					pMemory->u8Runs ++;
 				}
+			}
+			else if (stToken.stJump.u3_JumpType == SONG_END)
+			{
+				return stToken;
 			}
 			else
 			{
@@ -521,6 +546,10 @@ static int SONG_DecodeLine(char* sLine)
 	int bAlFine;
 	int bWithRepeat;
 
+	if (song_iTokenLen == 107)
+	{
+		bWithRepeat = 0;
+	}
 
 	// Get Token number
 	iTokenNr = SONG_GetNumber(sLine, 0, 3);
@@ -539,9 +568,9 @@ static int SONG_DecodeLine(char* sLine)
 		// it was a BB command
 		iDuration = SONG_GetNumber(sLine, 8, 2);
 		// Check range
-		if (iDuration<0 || iDuration>31)
+		if (iDuration<0 || iDuration>63)
 		{
-			return (SONG_DecodeError("Duration must be between 0 and 31"));
+			return (SONG_DecodeError("Duration must be between 0 and 63"));
 		}
 		// Check syntax
 		if (SONG_DecodeCheckSign(sLine, 10, ':') == -1) return -1;
@@ -597,7 +626,7 @@ static int SONG_DecodeLine(char* sLine)
 
 		// It's a bass-beat chord an not a jump
 		song_stTokens[song_iTokenLen].stBassBeat.u1_isJump = 0;
-		song_stTokens[song_iTokenLen].stBassBeat.u5_Duration = iDuration;
+		song_stTokens[song_iTokenLen].stBassBeat.u6_Duration = iDuration;
 		song_stTokens[song_iTokenLen].stBassBeat.u6_Bass = iBass;
 		song_stTokens[song_iTokenLen].stBassBeat.u1_Articulated = bIsArticulated;
 		song_stTokens[song_iTokenLen].stBassBeat.u10_Beat = iBeat;
@@ -851,7 +880,7 @@ static int SONG_Load(int iSong)
 	PRINTF_printf("File %s loaded successfully", sFilename);
 	CONSOLE_Prompt();
 
-	// File successfuly loaded
+	// File successfully loaded
 	return 0;
 }
 

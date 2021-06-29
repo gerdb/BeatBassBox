@@ -59,11 +59,11 @@ typedef __PACKED_STRUCT
 		struct
 		{
 			uint32_t u1_isJump:1;
-			uint32_t u5_Duration:5;
+			uint32_t u6_Duration:6;
 			uint32_t u6_Bass:6;
 			uint32_t u1_Articulated:1;
 			uint32_t u10_Beat:10;
-			uint32_t :9;
+			uint32_t :8;
 		} stBassBeat;
 
 		struct
@@ -95,7 +95,7 @@ void SONG_Select(int iSong);
 int SONG_Loaded();
 void SONG_Start();
 SONG_Token_s SONG_GetNext();
-
+int SONG_GetPeriod();
 
 
 

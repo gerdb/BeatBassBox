@@ -34,6 +34,7 @@
 void HAMMER_Init();
 void HAMMER_Task1ms();
 void HAMMER_Drum(void);
+void HAMMER_DrumRaw(void);
 void HAMMER_ParSet(int iParameter, int iVal);
 void HAMMER_ParGet();
 

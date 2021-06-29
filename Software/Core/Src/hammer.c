@@ -67,6 +67,14 @@ void HAMMER_Task1ms()
 			);
 }
 
+/**
+ * One hammer beat
+ *
+ */
+void HAMMER_DrumRaw(void)
+{
+	ham_iTimer = 0;
+}
 
 /**
  * One hammer beat
@@ -74,8 +82,9 @@ void HAMMER_Task1ms()
  */
 void HAMMER_Drum(void)
 {
+	HAMMER_ParSet(1,80-(TMC5160_GetPos()-8000)/1000);
+
 	ham_iTimer = 0;
-	//PRINTF_printf("boom!");
 }
 
 /**

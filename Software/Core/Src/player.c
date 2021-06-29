@@ -102,6 +102,7 @@ void PLAYER_Start()
 		PRINTF_printf("Start %s", song_sTitle);
 		CONSOLE_Prompt();
 
+		player_iPeriod = SONG_GetPeriod();
 		SONG_Start();
 		player_bPlaying = 1;
 		player_iBlinkCnt = 0;
@@ -156,7 +157,7 @@ void PLAYER_Task1ms()
 				{
 					BASS_Play(player_stCurrentToken.stBassBeat.u6_Bass,
 							player_stCurrentToken.stBassBeat.u1_Articulated);
-					player_iDelayNext = player_stCurrentToken.stBassBeat.u5_Duration;
+					player_iDelayNext = player_stCurrentToken.stBassBeat.u6_Duration;
 				}
 			}
 		}

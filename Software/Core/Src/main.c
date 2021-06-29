@@ -34,6 +34,7 @@
 #include "frqdetect.h"
 #include "tmc5160.h"
 #include "bass.h"
+#include "approximation.h"
 #include "hammer.h"
 #include "song.h"
 #include "player.h"

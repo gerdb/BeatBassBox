@@ -95,6 +95,17 @@ static int CONSOLE_ProcessCmd(void)
 			return CONSOLE_ERROR_PAR_COUNT;
 		}
 	}
+	else if (CONSOLE_IsCmd("HAMMER.DRUMRAW"))
+	{
+		if (console_iPars == 0)
+		{
+			HAMMER_DrumRaw();
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
 	else if (CONSOLE_IsCmd("HAMMER.DRUM"))
 	{
 		if (console_iPars == 0)
