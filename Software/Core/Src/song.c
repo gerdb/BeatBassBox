@@ -52,6 +52,7 @@ int song_bIsFine;
 int song_bWithRepeat;
 int song_iPlayUntil;
 int song_iContinueAt;
+int song_iFirstBassNote;
 
 
 
@@ -87,6 +88,7 @@ void SONG_Init()
 	song_iTokenIndex = 0;
 	song_bHasSwitch = 0;
 	song_bIsFine = 0;
+	song_iFirstBassNote = 0;
 	song_endToken.stJump.u1_isJump = 1;
 	song_endToken.stJump.u3_JumpType = SONG_END;
 }
@@ -163,6 +165,18 @@ void SONG_Start()
 	song_iPlayUntil = SONG_NO_JMP_DEST;
 	song_iContinueAt = SONG_NO_JMP_DEST;
 }
+
+/**
+ * Get the first bass note
+ *
+ */
+int SONG_GetFirstBassNote()
+{
+	return song_iFirstBassNote;
+}
+
+
+
 
 /**
  * Get the next token
@@ -587,6 +601,11 @@ static int SONG_DecodeLine(char* sLine)
 			{
 				return (SONG_DecodeError("Bass note out of range"));
 			}
+
+			if (song_iFirstBassNote == 0)
+			{
+				song_iFirstBassNote = iBass;
+			}
 		}
 
 		// Decode the articulation sign
@@ -810,6 +829,7 @@ static int SONG_Load(int iSong)
     int error = 0;
     int lineNr = 0;
 
+
     // We accept only 10 songs from 0..9
     if (iSong<0 || iSong>9)
     {
@@ -818,12 +838,14 @@ static int SONG_Load(int iSong)
     	return 1;
     }
 
+
     sFilename[0] = iSong + '0';
 
 	// File on stick?
 	if (f_open(&USBHFile, sFilename, FA_READ) == FR_OK)
 	{
 
+		song_iFirstBassNote = 0;
     	// Read the *.c file line by line
 		while (f_gets(sLine, sizeof(sLine)-1, &USBHFile) != 0 && !error)
 		{

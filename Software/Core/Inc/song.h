@@ -96,6 +96,7 @@ int SONG_Loaded();
 void SONG_Start();
 SONG_Token_s SONG_GetNext();
 int SONG_GetPeriod();
+int SONG_GetFirstBassNote();
 
 
 

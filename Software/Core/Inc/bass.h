@@ -48,7 +48,9 @@ typedef enum
 /* Function prototypes -------------------------------------------------------*/
 void BASS_Init();
 void BASS_Task1ms();
+int BASS_MoveTo(int iNote);
 void BASS_Play(int iNote, int bIsArticulated);
 void BASS_StartCalib();
+int BASS_IsCalibrated();
 
 #endif /* __BASS_H__ */

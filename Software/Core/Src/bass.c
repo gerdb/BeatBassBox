@@ -37,6 +37,7 @@ int bass_iCalibCnt;
 int bass_iCalibPos;
 float bass_fFrq;
 float bass_fNoteFrqs[64];
+int bass_bIsCalibrated;
 
 /* Local function prototypes -------------------------------------------------*/
 
@@ -50,6 +51,7 @@ float bass_fNoteFrqs[64];
 void BASS_Init()
 {
 	bass_eCalib = CALIB_NO;
+	bass_bIsCalibrated = 0;
 
 	int index;
 	// Fill the notes with its frequency
@@ -94,7 +96,7 @@ void BASS_Task1ms()
 		if (!TMC5160_IsReferencing())
 		{
 			APPROX_Init();
-			bass_iCalibPos = 18000;
+			bass_iCalibPos = TMC_POS_CALIBMAX;
 			TMC5160_MoveTo(bass_iCalibPos);
 			bass_iCalibCnt = 0;
 			bass_eCalib = CALIB_START_WAIT_REACHED;
@@ -133,7 +135,7 @@ void BASS_Task1ms()
 		break;
 	case CALIB_SINGLE:
 		bass_iCalibCnt = 0;
-		if (bass_iCalibPos > 8000)
+		if (bass_iCalibPos > TMC_POS_CALIBMIN)
 		{
 			TMC5160_MoveTo(bass_iCalibPos);
 
@@ -173,7 +175,7 @@ void BASS_Task1ms()
 			}
 			else
 			{
-				PRINTF_printf("No propper signal\r\n");
+				PRINTF_printf("No proper signal\r\n");
 				bass_eCalib = CALIB_NO;
 			}
 		}
@@ -183,12 +185,22 @@ void BASS_Task1ms()
 		APPROX_Calc(100.0f);
 		FRQDETECT_SetFilter(500, 50, 0);
 		FRQDETECT_SetMaxFrq(500);
-		TMC5160_MoveTo(6000);
+		TMC5160_MoveTo(TMC_POS_HOME);
+		bass_bIsCalibrated = 1;
 		bass_eCalib = CALIB_NO;
 		break;
 	default:
 		bass_eCalib = CALIB_NO;
 	}
+}
+
+/**
+ * Is the bass calibrated?
+ *
+ */
+int BASS_IsCalibrated()
+{
+	return bass_bIsCalibrated;
 }
 
 /**
@@ -198,7 +210,32 @@ void BASS_Task1ms()
 void BASS_StartCalib()
 {
 	bass_eCalib = CALIB_START;
+	bass_bIsCalibrated = 0;
 }
+
+/**
+ * Move only the arm
+ *
+ */
+int BASS_MoveTo(int iNote)
+{
+	if (iNote > 0)
+	{
+		int iPos = APPROX_Calc(bass_fNoteFrqs[iNote]);
+		if (iPos > TMC_POS_MIN &&  iPos < TMC_POS_MAX)
+		{
+			PRINTF_printf("%d ", iNote);
+			TMC5160_MoveTo(iPos);
+			return 1;
+		}
+		else
+		{
+			PRINTF_printf("Position out of range");
+		}
+	}
+	return 0;
+}
+
 
 /**
  * Play one bass note
@@ -206,18 +243,8 @@ void BASS_StartCalib()
  */
 void BASS_Play(int iNote, int bIsArticulated)
 {
-	if (iNote > 0)
+	if (BASS_MoveTo(iNote))
 	{
-		int iPos = APPROX_Calc(bass_fNoteFrqs[iNote]);
-		if (iPos > 6000 &&  iPos < 20000)
-		{
-			PRINTF_printf("%d ", iNote);
-			TMC5160_MoveTo(iPos);
-			HAMMER_Drum();
-		}
-		else
-		{
-			PRINTF_printf("Position out of range");
-		}
+		HAMMER_Drum();
 	}
 }

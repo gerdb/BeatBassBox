@@ -24,6 +24,7 @@
 #include "console.h"
 #include "bass.h"
 #include "song.h"
+#include "tmc5160.h"
 #include "player.h"
 #include "errorhandler.h"
 
@@ -101,10 +102,10 @@ void PLAYER_Start()
 	{
 		PRINTF_printf("Start %s", song_sTitle);
 		CONSOLE_Prompt();
-
+		BASS_MoveTo(SONG_GetFirstBassNote());
 		player_iPeriod = SONG_GetPeriod();
 		SONG_Start();
-		player_bPlaying = 1;
+		player_bPlaying = 1000; // Wait 1s
 		player_iBlinkCnt = 0;
 		player_iTime = 0;
 		player_iDelayNext = 0;
@@ -121,6 +122,7 @@ void PLAYER_Stop()
 	player_bPlaying = 0;
 	PRINTF_printf("Stop");
 	CONSOLE_Prompt();
+	TMC5160_MoveTo(TMC_POS_HOME);
 }
 
 /**
@@ -131,8 +133,15 @@ void PLAYER_Task1ms()
 {
 	PLAYER_StatusLED();
 
+	// Wait a certain time before starting
+	if (player_bPlaying > 1)
+	{
+		player_bPlaying--;
+		return;
+	}
+
 	// Play the song
-	if (player_bPlaying)
+	if (player_bPlaying == 1)
 	{
 		player_iTime++;
 		if (player_iTime > player_iPeriod)
@@ -178,7 +187,11 @@ void PLAYER_Task100ms()
 	// Toggle playing with button
 	if (player_bButtonClick)
 	{
-		if (!player_bPlaying)
+		if (!BASS_IsCalibrated())
+		{
+			BASS_StartCalib();
+		}
+		else if (!player_bPlaying)
 		{
 			PLAYER_Start();
 		}

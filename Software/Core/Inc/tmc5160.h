@@ -52,6 +52,12 @@
 #define TMC5160_PWMCONF		0x70
 
 #define TMC_VMAX			200000
+#define TMC_POS_HOME		6000
+#define TMC_POS_MIN			6000
+#define TMC_POS_MAX			20000
+#define TMC_POS_CALIBMIN	8000
+#define TMC_POS_CALIBMAX	18000
+
 
 /* Types ---------------------------------------------------------------------*/
 
