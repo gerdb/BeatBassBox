@@ -275,6 +275,18 @@ static int CONSOLE_ProcessCmd(void)
 			return CONSOLE_ERROR_PAR_COUNT;
 		}
 	}
+	else if (CONSOLE_IsCmd("BASS.TEST"))
+	{
+		if (console_iPars == 1)
+		{
+			BASS_Test(
+					console_as32Pars[0]);
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
 	else
 	{
 		return CONSOLE_ERROR_UNKNOWN_CMD;

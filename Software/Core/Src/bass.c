@@ -38,6 +38,8 @@ int bass_iCalibPos;
 float bass_fFrq;
 float bass_fNoteFrqs[64];
 int bass_bIsCalibrated;
+int bass_iMeasFrqCnt;
+float bass_fFrq;
 
 /* Local function prototypes -------------------------------------------------*/
 
@@ -52,6 +54,7 @@ void BASS_Init()
 {
 	bass_eCalib = CALIB_NO;
 	bass_bIsCalibrated = 0;
+	bass_iMeasFrqCnt = 0;
 
 	int index;
 	// Fill the notes with its frequency
@@ -84,6 +87,17 @@ void BASS_Init()
  */
 void BASS_Task1ms()
 {
+	if (bass_iMeasFrqCnt > 0)
+	{
+		bass_iMeasFrqCnt--;
+		if (bass_iMeasFrqCnt == 0)
+		{
+			float fFrq = FRQDETECT_GetMeanFrequency();
+			PRINTF_printf("frq: %d.%03dHz\r\n", (int)fFrq,(int)((fFrq-(int)fFrq)*1000) );
+			PRINTF_printf("diff: %dcent\r\n", (int)(100.0f*((fFrq/bass_fFrq-1.0f)/0.05946309f)));
+		}
+	}
+
 	switch (bass_eCalib)
 	{
 	case CALIB_NO:
@@ -224,7 +238,7 @@ int BASS_MoveTo(int iNote)
 		int iPos = APPROX_Calc(bass_fNoteFrqs[iNote]);
 		if (iPos > TMC_POS_MIN &&  iPos < TMC_POS_MAX)
 		{
-			PRINTF_printf("%d ", iNote);
+			//PRINTF_printf("%d ", iNote);
 			TMC5160_MoveTo(iPos);
 			return 1;
 		}
@@ -243,6 +257,28 @@ int BASS_MoveTo(int iNote)
  */
 void BASS_Play(int iNote, int bIsArticulated)
 {
+	PRINTF_printf("%d ", iNote);
+	if (BASS_MoveTo(iNote))
+	{
+		HAMMER_Drum();
+	}
+}
+
+/**
+ * Play one bass note and measure the frequency
+ *
+ */
+void BASS_Test(int iNote)
+{
+	bass_fFrq = bass_fNoteFrqs[iNote];
+	PRINTF_printf("frq: %d.%03dHz\r\n", (int)bass_fFrq,(int)((bass_fFrq-(int)bass_fFrq)*1000) );
+	int iPos = APPROX_Calc(bass_fFrq);
+	PRINTF_printf("pos: %d\r\n", iPos );
+	FRQDETECT_SetFilter((int)bass_fFrq, 50, 1);
+	FRQDETECT_SetMaxFrq((int)(bass_fFrq*1.5f));
+	FRQDETECT_Start();
+	bass_iMeasFrqCnt = 500;
+
 	if (BASS_MoveTo(iNote))
 	{
 		HAMMER_Drum();

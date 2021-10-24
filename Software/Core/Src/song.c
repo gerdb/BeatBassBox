@@ -89,7 +89,8 @@ void SONG_Init()
 	song_bHasSwitch = 0;
 	song_bIsFine = 0;
 	song_iFirstBassNote = 0;
-	song_endToken.stJump.u1_isJump = 1;
+	song_endToken.stJump.u1_isExtra = 1;
+	song_endToken.stJump.u3_ExtraType = EXTRA_JUMP;
 	song_endToken.stJump.u3_JumpType = SONG_END;
 }
 
@@ -222,7 +223,7 @@ SONG_Token_s SONG_GetNext()
 		stToken = song_stTokens[song_iTokenIndex];
 
 		// Was it a jump?
-		if (stToken.stJump.u1_isJump)
+		if (stToken.stJump.u1_isExtra && stToken.stJump.u3_ExtraType == EXTRA_JUMP)
 		{
 			// Reference to the memory
 			if (stToken.stJump.u8_jumpToMemory != SONG_NO_JMP_REF)
@@ -349,7 +350,7 @@ SONG_Token_s SONG_GetNext()
 			}
 			stToken = song_stTokens[song_iTokenIndex];
 		}
-	} while (stToken.stJump.u1_isJump && iLoopLimit < 10);
+	} while (stToken.stJump.u1_isExtra && stToken.stJump.u3_ExtraType == EXTRA_JUMP  && iLoopLimit < 10);
 
 	return stToken;
 }
@@ -528,7 +529,8 @@ static int SONG_DecodeCheckSign(char* sLine, int pos, char c)
 static void SONG_AddEnd()
 {
 	// it was a jump
-	song_stTokens[song_iTokenLen].stJump.u1_isJump = 1;
+	song_stTokens[song_iTokenLen].stJump.u1_isExtra = 1;
+	song_stTokens[song_iTokenLen].stJump.u3_ExtraType = EXTRA_JUMP;
 	song_stTokens[song_iTokenLen].stJump.u3_JumpType = SONG_END;
 	song_stTokens[song_iTokenLen].stJump.u1_isSwitch = 0;
 	song_stTokens[song_iTokenLen].stJump.u1_alFine = 0;
@@ -644,7 +646,7 @@ static int SONG_DecodeLine(char* sLine)
 		}
 
 		// It's a bass-beat chord an not a jump
-		song_stTokens[song_iTokenLen].stBassBeat.u1_isJump = 0;
+		song_stTokens[song_iTokenLen].stBassBeat.u1_isExtra = 0;
 		song_stTokens[song_iTokenLen].stBassBeat.u6_Duration = iDuration;
 		song_stTokens[song_iTokenLen].stBassBeat.u6_Bass = iBass;
 		song_stTokens[song_iTokenLen].stBassBeat.u1_Articulated = bIsArticulated;
@@ -674,7 +676,8 @@ static int SONG_DecodeLine(char* sLine)
 		iJumpTo = SONG_GetNumber(sLine, 8, 3);
 
 		// it was a single repeat
-		song_stTokens[song_iTokenLen].stJump.u1_isJump = 1;
+		song_stTokens[song_iTokenLen].stJump.u1_isExtra = 1;
+		song_stTokens[song_iTokenLen].stJump.u3_ExtraType = EXTRA_JUMP;
 		song_stTokens[song_iTokenLen].stJump.u3_JumpType = SONG_J_REPEAT;
 		song_stTokens[song_iTokenLen].stJump.u1_isSwitch = bIsSwitch;
 		song_stTokens[song_iTokenLen].stJump.u1_alFine = 0;
@@ -692,7 +695,8 @@ static int SONG_DecodeLine(char* sLine)
 	else if (sLine[5]== 'F' && sLine[6]== 'I')
 	{
 		// it was a fine
-		song_stTokens[song_iTokenLen].stJump.u1_isJump = 1;
+		song_stTokens[song_iTokenLen].stJump.u1_isExtra = 1;
+		song_stTokens[song_iTokenLen].stJump.u3_ExtraType = EXTRA_JUMP;
 		song_stTokens[song_iTokenLen].stJump.u3_JumpType = SONG_J_FINE;
 		song_stTokens[song_iTokenLen].stJump.u1_isSwitch = 0;
 		song_stTokens[song_iTokenLen].stJump.u1_alFine = 0;
@@ -715,7 +719,8 @@ static int SONG_DecodeLine(char* sLine)
 		iJumpTo = SONG_GetNumber(sLine, 8, 3);
 
 		// it was a volta
-		song_stTokens[song_iTokenLen].stJump.u1_isJump = 1;
+		song_stTokens[song_iTokenLen].stJump.u1_isExtra = 1;
+		song_stTokens[song_iTokenLen].stJump.u3_ExtraType = EXTRA_JUMP;
 		song_stTokens[song_iTokenLen].stJump.u3_JumpType = SONG_J_VOLTA1;
 		song_stTokens[song_iTokenLen].stJump.u1_isSwitch = 0;
 		song_stTokens[song_iTokenLen].stJump.u1_alFine = 0;
@@ -773,7 +778,8 @@ static int SONG_DecodeLine(char* sLine)
 		iContinueAt = SONG_GetNumber(sLine, 17, 3);
 
 		// it was a jump
-		song_stTokens[song_iTokenLen].stJump.u1_isJump = 1;
+		song_stTokens[song_iTokenLen].stJump.u1_isExtra = 1;
+		song_stTokens[song_iTokenLen].stJump.u3_ExtraType = EXTRA_JUMP;
 		song_stTokens[song_iTokenLen].stJump.u3_JumpType = SONG_J_JUMP;
 		song_stTokens[song_iTokenLen].stJump.u1_isSwitch = 0;
 		song_stTokens[song_iTokenLen].stJump.u1_alFine = bAlFine;

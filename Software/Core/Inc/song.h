@@ -35,6 +35,12 @@ typedef enum
 	SONG_J_REPEAT, SONG_J_FINE, SONG_J_VOLTA1, SONG_J_JUMP, SONG_END
 } SONG_JumpType_e;
 
+typedef enum
+{
+	EXTRA_JUMP, EXTRA_EMPO, EXTRA_RES2, EXTRA_RES3, EXTRA_RES4, EXTRA_RES5, EXTRA_RES6, EXTRA_RES7
+} SONG_ExtraType_e;
+
+
 // One entry with jump destinations
 typedef __PACKED_STRUCT
 {
@@ -50,6 +56,7 @@ typedef __PACKED_STRUCT
 	uint8_t u8Runs;
 } SONG_JumpToMemory_s;
 
+#define EXTRA_TYPE_JUMP 0x0
 
 // One BBB entry
 typedef __PACKED_STRUCT
@@ -58,7 +65,7 @@ typedef __PACKED_STRUCT
 	{
 		struct
 		{
-			uint32_t u1_isJump:1;
+			uint32_t u1_isExtra:1;
 			uint32_t u6_Duration:6;
 			uint32_t u6_Bass:6;
 			uint32_t u1_Articulated:1;
@@ -68,15 +75,24 @@ typedef __PACKED_STRUCT
 
 		struct
 		{
-			uint32_t u1_isJump:1;
+			uint32_t u1_isExtra:1;
+			uint32_t u3_ExtraType:3;
 			uint32_t u3_JumpType:3;
 			uint32_t u1_isSwitch:1;
 			uint32_t u1_alFine:1;
 			uint32_t u1_withRepeat:1;
 			uint32_t u8_jumpToDestinations:8;
 			uint32_t u8_jumpToMemory:8;
-			uint32_t :9;
+			uint32_t :6;
 		} stJump;
+
+		struct
+		{
+			uint32_t u1_isExtra:1;
+			uint32_t u3_ExtraType:3;
+			uint32_t u8_tempo:8;
+			uint32_t :20;
+		} stTempo;
 
 	};
 } SONG_Token_s;

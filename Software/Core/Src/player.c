@@ -154,13 +154,16 @@ void PLAYER_Task1ms()
 
 				// Get the next token
 				player_stCurrentToken = SONG_GetNext();
-				if (player_stCurrentToken.stJump.u1_isJump)
+				if (player_stCurrentToken.stJump.u1_isExtra)
 				{
-					if (player_stCurrentToken.stJump.u3_JumpType == SONG_END)
+					if (player_stCurrentToken.stJump.u3_ExtraType == EXTRA_JUMP)
 					{
-						PLAYER_Stop();
+						if (player_stCurrentToken.stJump.u3_JumpType == SONG_END)
+						{
+							PLAYER_Stop();
+						}
+						player_iDelayNext = 0;
 					}
-					player_iDelayNext = 0;
 				}
 				else
 				{

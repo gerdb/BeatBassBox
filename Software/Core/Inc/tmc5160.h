@@ -51,12 +51,16 @@
 #define TMC5160_CHOPCONF	0x6C
 #define TMC5160_PWMCONF		0x70
 
-#define TMC_VMAX			200000
-#define TMC_POS_HOME		6000
-#define TMC_POS_MIN			6000
-#define TMC_POS_MAX			20000
-#define TMC_POS_CALIBMIN	8000
-#define TMC_POS_CALIBMAX	18000
+#define TMC_FCLK			12000000
+#define TMC_VMAX			100000
+#define TMC_AMAX			20000
+#define TMC_POS_HOME		2000
+#define TMC_POS_MIN			2000
+#define TMC_POS_MAX			12000
+#define TMC_POS_CALIBMIN	2000
+#define TMC_POS_CALIBMAX	11000
+#define TMC_REF_RIGHT		1000
+#define TMC_REF_LEFT		-30000
 
 
 /* Types ---------------------------------------------------------------------*/

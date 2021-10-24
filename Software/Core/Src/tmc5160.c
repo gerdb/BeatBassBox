@@ -27,6 +27,7 @@
 #include "printf.h"
 #include "console.h"
 #include "errorhandler.h"
+#include <stdlib.h>
 
 /* Variables -----------------------------------------------------------------*/
 TMC5160_SPI_TX_s tmc_sSpiDMATxBuff;
@@ -36,6 +37,15 @@ uint8_t tmc_u8LastReadAllAddr;
 TMC5160_Ref_e tmc_eRefState;
 int tmc_iRefCnt;
 int tmc_iPosition=0;
+int tmc_iLastArmPos = 0;
+float tmc_fVmax;
+int tmc_iVmax;
+float tmc_fAmax;
+float tmc_fTVmax;
+//float tmc_fSTVmax;
+//float tmc_fT0Vmax;
+
+int tmc_iTVmax;
 
 /* Prototypes of static function ---------------------------------------------*/
 static void TMC5160_WriteData(uint8_t u8Addr, uint32_t u32Data);
@@ -130,9 +140,9 @@ void TMC5160_Init()
 
 	TMC5160_WriteData(TMC5160_A1, 1000);		// A1
 	TMC5160_WriteData(TMC5160_V1, 0);			// V1
-	TMC5160_WriteData(TMC5160_AMAX, 40000);		// AMAX
+	TMC5160_WriteData(TMC5160_AMAX, TMC_AMAX);	// AMAX
 	TMC5160_WriteData(TMC5160_VMAX, TMC_VMAX);	// VMAX
-	TMC5160_WriteData(TMC5160_DMAX, 40000);		// DMAX
+	TMC5160_WriteData(TMC5160_DMAX, TMC_AMAX);	// DMAX
 	TMC5160_WriteData(TMC5160_D1, 1400);		// D1
 	TMC5160_WriteData(TMC5160_VSTART, 10);		// VSTART
 	TMC5160_WriteData(TMC5160_VSTOP, 10);		// VSTOP
@@ -144,6 +154,15 @@ void TMC5160_Init()
 
 	// Enable driver
 	HAL_GPIO_WritePin(DRV_ENN_GPIO_Port, DRV_ENN_Pin, GPIO_PIN_RESET);
+
+	// Calculate the time where the maximum speed is reached, depending in VMAX and AMAX
+	tmc_fVmax = TMC_VMAX * 0.715255f; // TMC_VMAX / (2^24) * TMC_FCLK;
+	tmc_iVmax = tmc_fVmax / 1000; // in 1ms
+	tmc_fAmax = TMC_AMAX * 65.4836185f; // TMC_AMAX / (2^41) * TMC_FCLK * TMC_FCLK;
+	tmc_fTVmax = tmc_fVmax / tmc_fAmax;
+	//tmc_fSTVmax = 0.5f * tmc_fAmax * tmc_fTVmax * tmc_fTVmax;
+	//tmc_fT0Vmax = tmc_fTVmax - tmc_fSTVmax / tmc_fVmax;
+	tmc_iTVmax = tmc_fTVmax * 1000; // in 1ms
 }
 
 
@@ -165,7 +184,7 @@ void TMC5160_Task1ms()
 		if (((TMC5160_REG_RAMP_STAT)TMC5160_ReadData(TMC5160_RAMP_STAT)).STATUS_STOP_L)
 		{
 			// We are in stop position, so move right a little bit right
-			TMC5160_WriteData(TMC5160_XTARGET, 1000);
+			TMC5160_WriteData(TMC5160_XTARGET, TMC_REF_RIGHT);
 		}
 		else
 		{
@@ -177,7 +196,7 @@ void TMC5160_Task1ms()
 	case REF_MOVE_R:
 		if (tmc_iRefCnt > 1000)
 		{
-			TMC5160_WriteData(TMC5160_XTARGET, -30000);
+			TMC5160_WriteData(TMC5160_XTARGET, TMC_REF_LEFT);
 			TMC5160_ReadData(TMC5160_RAMP_STAT);
 			tmc_iRefCnt = 0;
 			tmc_eRefState = REF_MOVE_REF;
@@ -202,7 +221,7 @@ void TMC5160_Task1ms()
 
 			TMC5160_WriteData(TMC5160_VMAX, TMC_VMAX );
 			TMC5160_WriteData(TMC5160_RAMPMODE, 0);		// Position mode
-			TMC5160_WriteData(TMC5160_XTARGET, 6800);
+			TMC5160_WriteData(TMC5160_XTARGET, TMC_POS_HOME);
 			tmc_eRefState = REF_NO;
 		}
 
@@ -290,6 +309,24 @@ void TMC5160_MoveTo(int32_t s32Position)
 
 	tmc_iPosition = s32Position;
 	TMC5160_WriteData(TMC5160_XTARGET, s32Position);
+}
+
+
+/**
+ * Calculates the moving delay depending on the way to move
+ *
+ * \param iNextArmPos the next arm position
+ *
+ * \return the delay in ms
+ *
+ */
+int TMC5160_CalcDelay(int iNextArmPos)
+{
+	int iDiff = abs(iNextArmPos - tmc_iLastArmPos);
+	// we add once the Time TVmax
+	int iTime = tmc_iTVmax + iDiff / tmc_iVmax;
+	tmc_iLastArmPos = iNextArmPos;
+	return iTime;
 }
 
 /**

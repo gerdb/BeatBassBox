@@ -22,6 +22,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "printf.h"
 #include "console.h"
+#include "tmc5160.h"
 #include "hammer.h"
 #include "errorhandler.h"
 
@@ -66,6 +67,20 @@ void HAMMER_Task1ms()
 			(ham_iTimer > ham_iTime2 && ham_iTimer < (ham_iTime2 + ham_iDuration2))
 			);
 }
+
+/**
+ * Calculates the hammer delay depending on the arm position
+ *
+ * \param iArmPos the next arm position
+ *
+ * \return the delay in ms
+ *
+ */
+int HAMMER_CalcDelay(int iArmPos)
+{
+	return 100 + (iArmPos / 1000);
+}
+
 
 /**
  * One hammer beat

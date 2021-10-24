@@ -33,6 +33,7 @@
 /* Function prototypes -------------------------------------------------------*/
 void HAMMER_Init();
 void HAMMER_Task1ms();
+int HAMMER_CalcDelay(int iArmPos);
 void HAMMER_Drum(void);
 void HAMMER_DrumRaw(void);
 void HAMMER_ParSet(int iParameter, int iVal);
