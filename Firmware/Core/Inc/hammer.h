@@ -1,4 +1,5 @@
 /*
+
  *  Project:      BeatBassBox
  *  File:         hammer.h
  *  Author:       Gerd Bartelt - www.sebulli.com
