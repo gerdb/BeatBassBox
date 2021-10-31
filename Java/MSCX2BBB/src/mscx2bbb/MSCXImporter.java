@@ -368,6 +368,111 @@ public class MSCXImporter implements ContentHandler {
 		return optimizedExportTokens.get(index).lineNr;
 	}
 	
+	private void RemoveToken(int index)
+	{
+		optimizedExportTokens.remove(index);
+		for (int i=index; i< optimizedExportTokens.size() ; i++)
+		{
+			Token token = optimizedExportTokens.get(i);
+			token.lineNr --;
+		}
+		for (int i=0; i< optimizedExportTokens.size() ; i++)
+		{
+			Token token = optimizedExportTokens.get(i);
+			if (token.tokenType == Token_Type.JUMP)
+			{
+				if (token.jumpToLine > index) token.jumpToLine--;
+				if (token.playUntilLine > index) token.playUntilLine--;
+				if (token.continueAtLine > index) token.continueAtLine--;
+				// Generate new line
+				token.jumpMarkLine = token.getExportString(extra);
+			}
+		}
+	}
+	
+	/**
+	 * Check one repetition block
+	 */
+	private boolean CheckSingleRepetition(int pos, int amountBack, int number)
+	{
+		int start = pos-amountBack+1;
+		for (int i=start; i<=pos ; i++)
+		{
+			int first = i - (number*amountBack);
+			if (first < 0) return false;
+			if (!optimizedExportTokens.get(first).sameChord(optimizedExportTokens.get(i)))
+				return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Check for repetition and replace it
+	 */
+	private boolean ReplaceRepetition(int pos, int amountBack)
+	{
+		
+		int blocks = 0;
+		while (CheckSingleRepetition(pos, amountBack, blocks + 1))
+		{
+			blocks++;
+		}
+		if (blocks == 0) return false;
+		
+		//System.out.println(pos + " " + amountBack + " " + blocks);
+		
+		// A loop with 1 run has no advantage
+		if (amountBack<=1 && blocks<=1) return false;
+		
+		int start = pos - blocks*amountBack + 1;
+		optimizedExportTokens.get(start).MakeRelRepeat(amountBack, blocks+1, extra);
+		
+		for (int i=1; i<(amountBack * blocks); i++)
+		{
+			RemoveToken(start+1);
+		}
+		return true;
+	}
+	
+	/**
+	 * Reduce the lines
+	 */
+	private void Compress()
+	{
+		boolean found ;
+		
+		do {
+			found = false;
+			for (int ii=1; ii < optimizedExportTokens.size() && !found; ii++)
+			{
+				for (int i=optimizedExportTokens.size()-1; i>0  && !found; i--)
+				{
+					if (ReplaceRepetition(i,ii))
+					{
+						found = true;
+					}
+				}
+			}
+		} while (found);
+	}
+	
+	/**
+	 * Remove unused markers
+	 */
+	private void RemoveUnusedMarkers()
+	{
+		
+		for (int i=optimizedExportTokens.size()-1; i>=0 ; i--)
+		{
+			Token token = optimizedExportTokens.get(i);
+			if (token.tokenType == Token_Type.MARK &&
+					token.lineNr == -1)
+			{
+				optimizedExportTokens.remove(i);
+			}
+		}
+	}
+	
 	/**
 	 * Fill the jumps with line numbers as destinations
 	 */
@@ -405,8 +510,21 @@ public class MSCXImporter implements ContentHandler {
 				
 				// Generate new line
 				bbxline.jumpMarkLine = bbxline.getExportString(extra);
+				
+				// Mark the destination as jump desination
+				if (bbxline.jumpToLine >= 0)
+				{
+					for (int ii=0; ii< optimizedExportTokens.size(); ii++)
+					{
+						if (bbxline.jumpToLine == optimizedExportTokens.get(ii).lineNr)
+						{
+							optimizedExportTokens.get(ii).isJumpDestination = true;
+						}
+					}
+				}
 			}
 		}
+		
 	}
 	
 	/**
@@ -479,6 +597,8 @@ public class MSCXImporter implements ContentHandler {
 		Optimize();
 		LineNumbers();
 		JumpDestinations();
+		RemoveUnusedMarkers();
+		Compress();
 		
 		PrintWriter pw;
 		try {
@@ -509,7 +629,15 @@ public class MSCXImporter implements ContentHandler {
 					{
 						pw.print("   ");
 					}
-					pw.print(": ");
+					pw.print(":");
+					if (bbxline.isJumpDestination)
+					{
+						pw.print("*");
+					}
+					else
+					{
+						pw.print(" ");
+					}
 					
 					if (extra)
 					{
@@ -540,6 +668,11 @@ public class MSCXImporter implements ContentHandler {
 						pw.println(bbxline.jumpMarkLine);
 					}
 					lineNr++;
+				}
+				else
+				{
+					// it was a marker
+					pw.println(bbxline.jumpMarkLine);
 				}
 			}
 			pw.close();
@@ -717,17 +850,28 @@ public class MSCXImporter implements ContentHandler {
 			label = content.trim();
 		}
 		if (qName.equals("Marker")) {
-			// Add a marker
-			tokens.add(
-					new Token(label,
-							measureTime));
+
 			
+			// If it's "To Coda", add a jump to coda
+			if (text.equalsIgnoreCase("To Coda"))
+			{
+				tokens.add(
+						new Token(Token.Jump_Type.JUMP,
+								measureTime, label));
+			}
 			// If it's "Fine", add also a jump to end
-			if (text.equalsIgnoreCase("Fine"))
+			else if (text.equalsIgnoreCase("Fine"))
 			{
 				tokens.add(
 						new Token(Token.Jump_Type.FINE,
 								measureTime + measureDuration ));
+			}
+			else
+			{
+				// Add a marker
+				tokens.add(
+						new Token(label,
+								measureTime));
 			}
 		}
 		
@@ -831,7 +975,7 @@ public class MSCXImporter implements ContentHandler {
 			} else if (content.equals("measure")) {
 				dur = 1;
 			} else {
-				System.out.println("Unknown Duration: " + content);
+				System.err.println("Unknown Duration: " + content);
 			}
 
 			token.setDuration(128 / dur, normalNotes, actualNotes);
@@ -841,7 +985,7 @@ public class MSCXImporter implements ContentHandler {
 			if (content.equals("4/4")) {
 				token.setDuration(128, normalNotes, actualNotes);
 			} else {
-				System.out.println("Unknown Duration: " + content);
+				System.err.println("Unknown Duration: " + content);
 			}
 		}
 		

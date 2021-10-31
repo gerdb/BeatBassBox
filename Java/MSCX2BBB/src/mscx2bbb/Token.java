@@ -15,7 +15,7 @@ public class Token implements Comparable<Token> {
 	}
 	public enum Jump_Type
 	{
-	  NONE, END_REPEAT, END_REPEAT_SWITCH, VOLTA, FINE, JUMP
+	  NONE, END_REPEAT, END_REPEAT_SWITCH, REPEAT_REL, VOLTA, FINE, JUMP
 	}
 	public int timestamp;
 	private int duration;
@@ -45,6 +45,10 @@ public class Token implements Comparable<Token> {
 	public int jumpToLine = -1;
 	public int playUntilLine = -1;
 	public int continueAtLine = -1;
+	public boolean isJumpDestination = false;
+	public int repeatLinesBack = 0;
+	public int repeatCnt = 0;
+	
 	
 	public int tempo = 0;
 	
@@ -85,6 +89,14 @@ public class Token implements Comparable<Token> {
 		this.jumpType = jumpType;
 		this.timestamp = timestamp;
 	}
+	public Token(Jump_Type jumpType, int timestamp, String jumpTo)
+	{
+		this.tokenType = Token_Type.JUMP;
+		this.jumpType = jumpType;
+		this.timestamp = timestamp;
+		this.jumpTo = jumpTo;
+	}
+	
 	public Token(String marker, int timestamp)
 	{
 		this.tokenType = Token_Type.MARK;
@@ -171,6 +183,14 @@ public class Token implements Comparable<Token> {
 	public boolean isChord()
 	{
 		return isBass() || isBeat() || isRest();
+	}
+	public boolean isRepeat_Rel()
+	{
+		return isJump() && jumpType == Jump_Type.REPEAT_REL;
+	}
+	public boolean isRepeatableChord()
+	{
+		return isBass() || isBeat() || isRest() || isRepeat_Rel();
 	}
 	public boolean isTempo()
 	{
@@ -290,6 +310,11 @@ public class Token implements Comparable<Token> {
 			{
 				ret = "]S:"+ jumpToLineStr;
 			}
+			else if (jumpType == Jump_Type.REPEAT_REL)
+			{
+				ret = "< :"+ String.format("%03d", repeatLinesBack) +
+						":" + String.format("%03d", repeatCnt);
+			}
 			else if (jumpType == Jump_Type.VOLTA)
 			{
 				ret = "V1:" + jumpToLineStr;
@@ -367,6 +392,16 @@ public class Token implements Comparable<Token> {
 			
 		return 0;
 	}
+	
+	public void MakeRelRepeat(int amountBack, int blocks, boolean extra)
+	{
+		tokenType = Token_Type.JUMP;
+		jumpType = Jump_Type.REPEAT_REL;
+		time = 0;
+		repeatLinesBack = amountBack;
+		repeatCnt = blocks;
+		jumpMarkLine = getExportString(extra);
+	}
 
 	@Override
 	public int compareTo(Token o) {
@@ -379,10 +414,36 @@ public class Token implements Comparable<Token> {
 		return Integer.compare(this.sortOrder(), o.sortOrder());
 	}
 	
+	public boolean sameChord(Token o)
+	{
+		if (!this.isRepeatableChord()) return false;
+		if (!o.isRepeatableChord()) return false;
+		if (this.isRepeat_Rel() != o.isRepeat_Rel()) return false;
+			
+		if (isRepeat_Rel())
+		{
+			if (this.repeatLinesBack != o.repeatLinesBack ) return false;
+			if (this.repeatCnt != o.repeatCnt ) return false;
+		}
+		else
+		{
+			if (this.duration != o.duration) return false;
+			if (this.isArticulated != o.isArticulated) return false;
+			if (this.hasDot != o.hasDot) return false;
+			if (this.time != o.time) return false;
+			if (!this.bassLine.equals(o.bassLine)) return false;
+			if (!this.beatLine.equals(o.beatLine)) return false;
+		}
+		return true;
+	}
+	
 	@Override
 	public String toString() {
 		return "tokenType=" + tokenType + ", jumpType=" + jumpType + ", markerType=" + markerType + "\n" + 
-				"timestamp=" + timestamp + ", duration=" + duration + "\n";
+				"timestamp=" + timestamp + ", duration=" + duration + "\n" +
+				"jumpToLine=" + jumpToLine + " isJumpDestination=" + isJumpDestination + "\n";
+		
+		
 				
 	}
 
