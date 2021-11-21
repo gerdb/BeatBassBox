@@ -71,6 +71,8 @@ void Error_Handler(void);
 #define RMII_MDIO_GPIO_Port GPIOA
 #define MIC_IN_Pin GPIO_PIN_3
 #define MIC_IN_GPIO_Port GPIOA
+#define SELECT_IN_Pin GPIO_PIN_5
+#define SELECT_IN_GPIO_Port GPIOA
 #define RMII_CRS_DV_Pin GPIO_PIN_7
 #define RMII_CRS_DV_GPIO_Port GPIOA
 #define RMII_RXD0_Pin GPIO_PIN_4
