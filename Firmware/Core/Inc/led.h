@@ -1,9 +1,9 @@
 /*
  *  Project:      BeatBassBox
- *  File:         errorhandler.h
+ *  File:         led.h
  *  Author:       Gerd Bartelt - www.sebulli.com
  *
- *  Description:  header file for errorhandler.c
+ *  Description:  header file for led.c
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,25 +20,27 @@
  *
  */
 
-#ifndef __ERRORHANDLER_H__
-#define __ERRORHANDLER_H__
+#ifndef __LED_H__
+#define __LED_H__
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
 /* Constants  ----------------------------------------------------------------*/
-#define ERROR_NO_ERROR			0
-
-#define ERROR_IN_BBB_FILE		0x00000001
-#define ERROR_TMC5160_VERSION	0x00000002
-
 
 /* Types ---------------------------------------------------------------------*/
+typedef enum
+{
+	LED_S_REF, LED_S_SONG_LOADED, LED_S_SONG_NOT_LOADED
+} LED_StateType_e;
 
+typedef enum
+{
+	LED_C_OFF, LED_C_GREEN, LED_C_RED, LED_C_BLUE
+} LED_Colorype_e;
 
 /* Function prototypes  ------------------------------------------------------*/
-void ERRORHANDLER_Init();
-void ERRORHANDLER_SetError(uint32_t u32ErrCode);
-void ERRORHANDLER_ResetError(uint32_t u32ErrCode);
+void LED_Init();
+void LED_Task1ms();
+void LED_State(LED_StateType_e eState);
 
-#endif /* __ERRORHANDLER_H__ */
+#endif /* __LED_H__ */

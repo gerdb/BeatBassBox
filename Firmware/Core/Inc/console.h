@@ -40,7 +40,9 @@
 /* Function prototypes -------------------------------------------------------*/
 void CONSOLE_Init(void);
 void CONSOLE_NewChar(char c);
-void CONSOLE_Text(char* text);
+void CONSOLE_Print(char* text);
+void CONSOLE_PrintPrompt(char* text);
+void CONSOLE_PrintLn(char* text);
 void CONSOLE_NewLine(void);
 void CONSOLE_Prompt(void);
 

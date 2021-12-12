@@ -124,7 +124,7 @@ void BASS_Task1ms()
 			FRQDETECT_SetFilter(500, 50, 0);
 			FRQDETECT_SetMaxFrq(500);
 			FRQDETECT_Start();
-			HAMMER_Drum();
+			HAMMER_DrumCorrected();
 			bass_eCalib = CALIB_WAIT_FIRST;
 		}
 		break;
@@ -168,7 +168,7 @@ void BASS_Task1ms()
 			FRQDETECT_SetFilter((int)bass_fFrq, 50, 1);
 			FRQDETECT_SetMaxFrq((int)(bass_fFrq*1.5f));
 			FRQDETECT_Start();
-			HAMMER_Drum();
+			HAMMER_DrumCorrected();
 			bass_eCalib = CALIB_SINGLE_WAIT;
 		}
 		break;
@@ -260,7 +260,7 @@ void BASS_Play(int iNote, int bIsArticulated)
 	PRINTF_printf("%d ", iNote);
 	if (BASS_MoveTo(iNote))
 	{
-		HAMMER_Drum();
+		HAMMER_DrumCorrected();
 	}
 }
 
@@ -281,6 +281,6 @@ void BASS_Test(int iNote)
 
 	if (BASS_MoveTo(iNote))
 	{
-		HAMMER_Drum();
+		HAMMER_DrumCorrected();
 	}
 }

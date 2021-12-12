@@ -41,6 +41,7 @@
 #include "com.h"
 #include "console.h"
 #include "errorhandler.h"
+#include "led.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -115,6 +116,7 @@ int main(void)
   MX_FATFS_Init();
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 2 */
+  LED_Init();
   ERRORHANDLER_Init();
   COM_Init();
   CONSOLE_Init();
@@ -142,6 +144,8 @@ int main(void)
   		  HAMMER_Task1ms();
   		  SONG_Task1ms();
   		  PLAYER_Task1ms();
+  		  LED_Task1ms();
+
 
 	  	  // 10ms Tasks. Use values of 0..8 (9 is for 100ms tasks)
 	  	  if (iCntTask10ms == 1)

@@ -131,7 +131,7 @@ void PLAYER_Stop()
  */
 void PLAYER_Task1ms()
 {
-	PLAYER_StatusLED();
+	//PLAYER_StatusLED();
 
 	// Wait a certain time before starting
 	if (player_bPlaying > 1)

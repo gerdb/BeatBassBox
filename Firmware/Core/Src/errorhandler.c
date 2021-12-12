@@ -3,7 +3,7 @@
  *  File:         errorhandler.c
  *  Author:       Gerd Bartelt - www.sebulli.com
  *
- *  Description:  Stepper driver for TMC5160 SilentStepStick
+ *  Description:  Errorhandler
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

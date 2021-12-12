@@ -49,19 +49,16 @@ static void CONSOLE_RepeatLast(void);
  */
 void CONSOLE_Init(void)
 {
-	PRINTF_printf("\r\n\r\nBeatBassBox v0.1");
+	CONSOLE_NewLine();
+	CONSOLE_NewLine();
+	CONSOLE_NewLine();
+	CONSOLE_NewLine();
+	CONSOLE_PrintLn("BeatBassBox v0.1");
+	CONSOLE_PrintLn("Type HELP for help");
 	CONSOLE_Prompt();
 }
 
-/**
- * Writes an (error) text
- *
- */
-void CONSOLE_Text(char* text)
-{
-	PRINTF_printf(text);
-	CONSOLE_Prompt();
-}
+
 
 /**
  * Check whether it is a specified command
@@ -76,6 +73,10 @@ static int CONSOLE_IsCmd(char *cmd)
 			return 0;
 		}
 	}
+	if (cmd[console_iCmdLen] != 0)
+	{
+		return 0;
+	}
 	return 1;
 }
 /**
@@ -84,7 +85,32 @@ static int CONSOLE_IsCmd(char *cmd)
  */
 static int CONSOLE_ProcessCmd(void)
 {
-	if (CONSOLE_IsCmd("SERVO.SET"))
+	if (CONSOLE_IsCmd("HELP"))
+	{
+		CONSOLE_NewLine();
+		CONSOLE_PrintLn("SERVO.SET [servo_nr] [value]   Set a servo to a value");
+		CONSOLE_PrintLn("HAMMER.DRUM                    Drum with actual parameters");
+		CONSOLE_PrintLn("HAMMER.DRUMCORR                Set positions dependent parameter and drums");
+		CONSOLE_PrintLn("HAMMER.PAR                     Show the hammer parameters");
+		CONSOLE_PrintLn("HAMMER.PAR [par] [value]       Set a parameter to a value");
+		CONSOLE_PrintLn("HAMMER.PARD ...                Same, but also drums");
+		CONSOLE_PrintLn("TMC.READ                       Read all parameters of the TMC controller");
+		CONSOLE_PrintLn("TMC.READ [par]                 Read one parameters of the TMC controller");
+		CONSOLE_PrintLn("TMC.WRITE [par] [value]        Write one parameters to the TMC controller");
+		CONSOLE_PrintLn("TMC.MOVE [pos]                 Move to a position");
+		CONSOLE_PrintLn("TMC.REF                        Start a reference move");
+		CONSOLE_PrintLn("FRQD.DEBUG [0/1]               Switch on/off debug mode");
+		CONSOLE_PrintLn("FRQD.FILTER                    Read filter parameters");
+		CONSOLE_PrintLn("FRQD.FILTER [p0] [p1] [p2]     Set 3 filter parameters");
+		CONSOLE_PrintLn("FRQD.DETECTION                 Show detection parameters");
+		CONSOLE_PrintLn("FRQD.DETECTION [p0] [p1] [p2]  Set 3 detection parameters");
+		CONSOLE_PrintLn("FRQD.MAXFRQ                    Show the max frequency");
+		CONSOLE_PrintLn("FRQD.MAXFRQ [frq]              Set the max frequency");
+		CONSOLE_PrintLn("FRQD.START                     Starts a frequency detection run");
+		CONSOLE_PrintLn("BASS.CALIB                     Starts calibration run");
+		CONSOLE_PrintLn("BASS.TEST [value]              Plays one bass note get the freq.");
+	}
+	else if (CONSOLE_IsCmd("SERVO.SET"))
 	{
 		if (console_iPars == 2)
 		{
@@ -95,7 +121,7 @@ static int CONSOLE_ProcessCmd(void)
 			return CONSOLE_ERROR_PAR_COUNT;
 		}
 	}
-	else if (CONSOLE_IsCmd("HAMMER.DRUMRAW"))
+	else if (CONSOLE_IsCmd("HAMMER.DRUM"))
 	{
 		if (console_iPars == 0)
 		{
@@ -106,11 +132,11 @@ static int CONSOLE_ProcessCmd(void)
 			return CONSOLE_ERROR_PAR_COUNT;
 		}
 	}
-	else if (CONSOLE_IsCmd("HAMMER.DRUM"))
+	else if (CONSOLE_IsCmd("HAMMER.DRUMCORR"))
 	{
 		if (console_iPars == 0)
 		{
-			HAMMER_Drum();
+			HAMMER_DrumCorrected();
 		}
 		else
 		{
@@ -127,6 +153,22 @@ static int CONSOLE_ProcessCmd(void)
 		else if (console_iPars == 2)
 		{
 			HAMMER_ParSet(console_as32Pars[0], console_as32Pars[1]);
+		}
+		else
+		{
+			return CONSOLE_ERROR_PAR_COUNT;
+		}
+	}
+	else if (CONSOLE_IsCmd("HAMMER.PARD"))
+	{
+		if (console_iPars == 0)
+		{
+			HAMMER_DrumRaw();
+		}
+		else if (console_iPars == 2)
+		{
+			HAMMER_ParSet(console_as32Pars[0], console_as32Pars[1]);
+			HAMMER_DrumRaw();
 		}
 		else
 		{
@@ -189,7 +231,7 @@ static int CONSOLE_ProcessCmd(void)
 
 	else if (CONSOLE_IsCmd("FRQD.DEBUG"))
 	{
-		if (console_iPars < 2)
+		if (console_iPars == 1)
 		{
 			FRQDETECT_SetDebug(console_as32Pars[0]);
 		}
@@ -444,8 +486,39 @@ static void CONSOLE_ProcessLine(void)
 	CONSOLE_Prompt();
 
 }
+
 /**
- * Prints a new new line
+ * Prints a text with new line
+ *
+ */
+void CONSOLE_Print(char* text)
+{
+	PRINTF_printf(text);
+}
+
+/**
+ * Writes an (error) text
+ *
+ */
+void CONSOLE_PrintPrompt(char* text)
+{
+	CONSOLE_Print(text);
+	CONSOLE_Prompt();
+}
+
+/**
+ * Prints a text with new line
+ *
+ */
+void CONSOLE_PrintLn(char* text)
+{
+	CONSOLE_Print(text);
+	CONSOLE_NewLine();
+}
+
+
+/**
+ * Prints a new line
  *
  */
 void CONSOLE_NewLine(void)

@@ -44,9 +44,9 @@ int ham_iDuration2;
 void HAMMER_Init()
 {
 	ham_iTimer = 10000;
-	ham_iDuration1 = 40;
+	ham_iDuration1 = 20;
 	ham_iTime2 = 70;
-	ham_iDuration2 = 20;
+	ham_iDuration2 = 10;
 }
 
 /**
@@ -95,7 +95,7 @@ void HAMMER_DrumRaw(void)
  * One hammer beat
  *
  */
-void HAMMER_Drum(void)
+void HAMMER_DrumCorrected(void)
 {
 	HAMMER_ParSet(1,80-(TMC5160_GetPos()-8000)/1000);
 
