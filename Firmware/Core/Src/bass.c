@@ -149,7 +149,7 @@ void BASS_Task1ms()
 		break;
 	case CALIB_SINGLE:
 		bass_iCalibCnt = 0;
-		if (bass_iCalibPos > TMC_POS_CALIBMIN)
+		if (bass_iCalibPos >= TMC_POS_CALIBMIN)
 		{
 			TMC5160_MoveTo(bass_iCalibPos);
 
@@ -200,6 +200,7 @@ void BASS_Task1ms()
 		FRQDETECT_SetFilter(500, 50, 0);
 		FRQDETECT_SetMaxFrq(500);
 		TMC5160_MoveTo(TMC_POS_HOME);
+		CONSOLE_PrintPrompt("Calibration successful");
 		bass_bIsCalibrated = 1;
 		bass_eCalib = CALIB_NO;
 		break;

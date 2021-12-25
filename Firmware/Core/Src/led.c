@@ -23,6 +23,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "led.h"
+#include "bass.h"
 
 /* Variables -----------------------------------------------------------------*/
 int led_iWobbleCntPrescaler = 0;
@@ -33,8 +34,6 @@ int led_iErrorCode = 0;
 int led_iErrorCntPrescaler = 0;
 int led_iErrorCnt = 0;
 
-
-int led_bStatusRef = 0;
 
 /* Prototypes of static function ---------------------------------------------*/
 static void LED_Color(LED_Colorype_e eColor);
@@ -114,7 +113,7 @@ void LED_Task1ms()
 	int bWobble=0;
 	static int bError=0;
 
-	// Count up and down between 0 and 100
+    // Count up and down between 0 and 100
 	led_iWobbleCntPrescaler ++;
 	if (led_iWobbleCntPrescaler > 5)
 	{
@@ -173,7 +172,7 @@ void LED_Task1ms()
 		LED_ColorM(LED_C_RED, bError);
 	}
 	// Waiting for reference run
-	else if (!led_bStatusRef)
+	else if (!BASS_IsCalibrated())
 	{
 		LED_ColorM(LED_C_GREEN, bWobble);
 	}

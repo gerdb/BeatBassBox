@@ -365,6 +365,19 @@ int TMC5160_IsReferencing()
 	return (tmc_eRefState != REF_NO);
 }
 
+
+/**
+ * reads data position and prints the result on the console
+ *
+ */
+void TMC5160_PrintPos()
+{
+	CONSOLE_NewLine();
+	PRINTF_printf("Position: %d",tmc_iPosition);
+	CONSOLE_NewLine();
+}
+
+
 /**
  * Writes data to the TMC5160
  *

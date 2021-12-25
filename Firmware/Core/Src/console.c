@@ -97,7 +97,8 @@ static int CONSOLE_ProcessCmd(void)
 		CONSOLE_PrintLn("TMC.READ                       Read all parameters of the TMC controller");
 		CONSOLE_PrintLn("TMC.READ [par]                 Read one parameters of the TMC controller");
 		CONSOLE_PrintLn("TMC.WRITE [par] [value]        Write one parameters to the TMC controller");
-		CONSOLE_PrintLn("TMC.MOVE [pos]                 Move to a position");
+		CONSOLE_PrintLn("TMC.POS                        Reads the position");
+		CONSOLE_PrintLn("TMC.POS [pos]                  Move to a position");
 		CONSOLE_PrintLn("TMC.REF                        Start a reference move");
 		CONSOLE_PrintLn("FRQD.DEBUG [0/1]               Switch on/off debug mode");
 		CONSOLE_PrintLn("FRQD.FILTER                    Read filter parameters");
@@ -205,9 +206,13 @@ static int CONSOLE_ProcessCmd(void)
 			return CONSOLE_ERROR_PAR_COUNT;
 		}
 	}
-	else if (CONSOLE_IsCmd("TMC.MOVE"))
+	else if (CONSOLE_IsCmd("TMC.POS"))
 	{
-		if (console_iPars == 1)
+		if (console_iPars == 0)
+		{
+			TMC5160_PrintPos();
+		}
+		else if (console_iPars == 1)
 		{
 			TMC5160_MoveTo(console_as32Pars[0]);
 		}
