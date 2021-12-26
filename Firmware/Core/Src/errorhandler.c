@@ -23,13 +23,12 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "errorhandler.h"
+#include "console.h"
 
 /* Variables -----------------------------------------------------------------*/
 uint32_t u32ErrorCode;
 
 /* Prototypes of static function ---------------------------------------------*/
-static void ERRORHANDLER_Leds();
-
 
 /* Functions -----------------------------------------------------------------*/
 
@@ -42,50 +41,60 @@ static void ERRORHANDLER_Leds();
 void ERRORHANDLER_Init()
 {
 	u32ErrorCode = ERROR_NO_ERROR;
-	ERRORHANDLER_Leds();
+}
+
+
+/**
+ * Sets an error with error text and id
+ *
+ */
+void ERRORHANDLER_SetErrorText(char* text, int iErrId)
+{
+	ERRORHANDLER_SetError(iErrId);
+	CONSOLE_PrintPrompt(text);
+}
+/**
+ * Sets an error with error text and id
+ *
+ */
+void ERRORHANDLER_SetError(int iErrId)
+{
+	u32ErrorCode |= (1<<(iErrId-1));
 }
 
 /**
- * Sets the LEDs
- *
+ * Resets an error with error text and id
  *
  */
-static void ERRORHANDLER_Leds()
+void ERRORHANDLER_ResetError(int iErrId)
 {
-	// LD1: green
-	// LD3: red
+	u32ErrorCode &= ~(1<<(iErrId-1));
+}
 
-	if (u32ErrorCode == ERROR_NO_ERROR)
+/**
+ * Get the error code with the highest priority (lowest ErrId)
+ *
+ */
+int ERRORHANDLER_GetError(void)
+{
+	uint32_t u32ErrorCodeTmp;
+
+	// No Error
+	if (u32ErrorCode == 0)
+		return 0;
+
+	u32ErrorCodeTmp = u32ErrorCode;
+
+	// Return the error ID
+	for (int i=1; i<=ERROR_MAX_ERROR_ID; i++)
 	{
-		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+		if (u32ErrorCodeTmp & 1)
+		{
+			return i;
+		}
+		u32ErrorCodeTmp>>=1;
 	}
-	else
-	{
-		  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-	}
-
+	return 0;
 }
 
-
-/**
- * Call this function every 1ms from main
- *
- *
- */
-void ERRORHANDLER_SetError(uint32_t u32ErrCode)
-{
-	u32ErrorCode |= u32ErrCode;
-	ERRORHANDLER_Leds();
-}
-
-/**
- * Call this function every 1ms from main
- *
- *
- */
-void ERRORHANDLER_ResetError(uint32_t u32ErrCode)
-{
-	u32ErrorCode &= ~u32ErrCode;
-	ERRORHANDLER_Leds();
-}
 

@@ -89,7 +89,7 @@ void TMC5160_Init()
 	}
 	else
 	{
-		ERRORHANDLER_SetError(ERROR_TMC5160_VERSION);
+		ERRORHANDLER_SetError(ERROR_TMC5160);
 		PRINTF_printf("TMC5160 not found. Version value: 0x%02x. Is it powered?", u8Version);
 		CONSOLE_Prompt();
 	}

@@ -29,8 +29,11 @@
 /* Constants  ----------------------------------------------------------------*/
 #define ERROR_NO_ERROR			0
 
-#define ERROR_IN_BBB_FILE		0x00000001
-#define ERROR_TMC5160_VERSION	0x00000002
+#define ERROR_DURING_CALIB		1
+#define ERROR_IN_BBB_FILE		2
+#define ERROR_TMC5160			3
+
+#define ERROR_MAX_ERROR_ID		3
 
 
 /* Types ---------------------------------------------------------------------*/
@@ -38,7 +41,9 @@
 
 /* Function prototypes  ------------------------------------------------------*/
 void ERRORHANDLER_Init();
-void ERRORHANDLER_SetError(uint32_t u32ErrCode);
-void ERRORHANDLER_ResetError(uint32_t u32ErrCode);
+void ERRORHANDLER_SetError(int iErrId);
+void ERRORHANDLER_SetErrorText(char* text, int iErrId);
+void ERRORHANDLER_ResetError(int iErrId);
+int ERRORHANDLER_GetError(void);
 
 #endif /* __ERRORHANDLER_H__ */

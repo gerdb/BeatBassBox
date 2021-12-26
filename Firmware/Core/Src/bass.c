@@ -103,6 +103,7 @@ void BASS_Task1ms()
 	case CALIB_NO:
 		break;
 	case CALIB_START:
+		ERRORHANDLER_ResetError(ERROR_DURING_CALIB);
 		TMC5160_Ref();
 		bass_eCalib = CALIB_WAIT_REF;
 		break;
@@ -142,7 +143,7 @@ void BASS_Task1ms()
 			}
 			else
 			{
-				PRINTF_printf("No propper signal\r\n");
+				ERRORHANDLER_SetErrorText("No propper signal", ERROR_DURING_CALIB);
 				bass_eCalib = CALIB_NO;
 			}
 		}
@@ -189,7 +190,7 @@ void BASS_Task1ms()
 			}
 			else
 			{
-				PRINTF_printf("No proper signal\r\n");
+				ERRORHANDLER_SetErrorText("No propper signal", ERROR_DURING_CALIB);
 				bass_eCalib = CALIB_NO;
 			}
 		}

@@ -25,6 +25,7 @@
 #include "led.h"
 #include "bass.h"
 #include "song.h"
+#include "errorhandler.h"
 
 /* Variables -----------------------------------------------------------------*/
 int led_iWobbleCntPrescaler = 0;
@@ -146,6 +147,8 @@ void LED_Task1ms()
 		bWobble = 1;
 	}
 
+	led_iErrorCode = ERRORHANDLER_GetError();
+
 	// Error blinking
 	if (led_iErrorCode)
 	{
@@ -154,7 +157,7 @@ void LED_Task1ms()
 		{
 			led_iErrorCntPrescaler = 0;
 			led_iErrorCnt++;
-			if (led_iErrorCnt > 10)
+			if (led_iErrorCnt > (ERROR_MAX_ERROR_ID + 2))
 			{
 				led_iErrorCnt = 0;
 			}

@@ -839,8 +839,8 @@ static int SONG_Load(int iSong)
     // We accept only 10 songs from 0..9
     if (iSong<0 || iSong>9)
     {
-		PRINTF_printf("Only songs 0.BBB .. 9.BBB allowed");
-		CONSOLE_Prompt();
+		ERRORHANDLER_SetErrorText("Only songs 0.BBB .. 9.BBB allowed",
+				ERROR_IN_BBB_FILE);
     	return 1;
     }
 
@@ -885,6 +885,7 @@ static int SONG_Load(int iSong)
 	else
 	{
 	    // BBB file not found
+		ERRORHANDLER_SetError(ERROR_IN_BBB_FILE);
 		PRINTF_printf("File %d.BBB not found", iSong);
 		CONSOLE_Prompt();
 		// File not found
