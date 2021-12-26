@@ -34,6 +34,6 @@ extern int ustick_bMounted;
 void USBSTICK_Connected(void);
 void USBSTICK_Disconnected(void);
 int USBSTICK_PluggedInEvent(void);
-
+int USBSTICK_IsAvailable(void);
 
 #endif /* __USB_STICK_H__ */

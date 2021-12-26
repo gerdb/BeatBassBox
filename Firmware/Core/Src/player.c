@@ -26,26 +26,28 @@
 #include "song.h"
 #include "tmc5160.h"
 #include "player.h"
+#include "adc.h"
 #include "errorhandler.h"
 
 /* Variables -----------------------------------------------------------------*/
 int player_bButton;
 int player_bButtonOld;
 int player_bButtonClick;
-int player_bPlaying;
+int player_iPlaying;
 int player_iBlinkCnt;
 int player_iPeriod;
 int player_iTime;
 int player_iDelayNext;
 int player_iStep;
-
+int player_iSelectedSound = 0;
 SONG_Token_s player_stCurrentToken;
 
 
 /* Local function prototypes -------------------------------------------------*/
-static void PLAYER_StatusLED();
+//static void PLAYER_StatusLED();
 static void PLAYER_Start();
 static void PLAYER_Stop();
+static void PLAYER_SelectSoundSwitch();
 /* Functions -----------------------------------------------------------------*/
 
 /**
@@ -55,18 +57,20 @@ static void PLAYER_Stop();
  */
 void PLAYER_Init()
 {
-	SONG_Select(1);
+	SONG_Select(player_iSelectedSound);
 	player_bButton = 0;
 	player_bButtonOld = 0;
 	player_bButtonClick = 0;
-	player_bPlaying = 0;
+	player_iPlaying = 0;
 	player_iPeriod = 100;
+	HAL_ADC_Start(&hadc2);
 }
 
 /**
  * Turn on/off the blue LED if the selected song was loaded
  *
  */
+/*
 static void PLAYER_StatusLED()
 {
 
@@ -91,6 +95,9 @@ static void PLAYER_StatusLED()
 	}
 
 }
+*/
+
+
 
 /**
  * Starts a song
@@ -105,7 +112,7 @@ void PLAYER_Start()
 		BASS_MoveTo(SONG_GetFirstBassNote());
 		player_iPeriod = SONG_GetPeriod();
 		SONG_Start();
-		player_bPlaying = 1000; // Wait 1s
+		player_iPlaying = 1000; // Wait 1s
 		player_iBlinkCnt = 0;
 		player_iTime = 0;
 		player_iDelayNext = 0;
@@ -119,11 +126,14 @@ void PLAYER_Start()
  */
 void PLAYER_Stop()
 {
-	player_bPlaying = 0;
+	player_iPlaying = 0;
 	PRINTF_printf("Stop");
 	CONSOLE_Prompt();
 	TMC5160_MoveTo(TMC_POS_HOME);
 }
+
+
+
 
 /**
  * Call this function every 1ms from main
@@ -133,15 +143,16 @@ void PLAYER_Task1ms()
 {
 	//PLAYER_StatusLED();
 
+
 	// Wait a certain time before starting
-	if (player_bPlaying > 1)
+	if (player_iPlaying > 1)
 	{
-		player_bPlaying--;
+		player_iPlaying--;
 		return;
 	}
 
 	// Play the song
-	if (player_bPlaying == 1)
+	if (player_iPlaying == 1)
 	{
 		player_iTime++;
 		if (player_iTime > player_iPeriod)
@@ -177,11 +188,49 @@ void PLAYER_Task1ms()
 }
 
 /**
+ * Read the select sound switch
+ *
+ */
+static void PLAYER_SelectSoundSwitch()
+{
+	int iSelectedSound;
+	static int iLastSelectedSound = 0;
+	static int iDebounceCnt = 0;
+	iSelectedSound = (HAL_ADC_GetValue(&hadc2) + 409) / 819 + 1;
+
+	// Has it changed?
+	if (iSelectedSound != iLastSelectedSound)
+	{
+		// debounce it 300ms
+		if (iDebounceCnt < 3)
+		{
+			iDebounceCnt ++;
+		}
+		else
+		{
+			// Do not switch between sound if playing
+			if (!player_iPlaying)
+			{
+				player_iSelectedSound = iSelectedSound;
+				iLastSelectedSound = iSelectedSound;
+				iDebounceCnt = 0;
+				SONG_Select(player_iSelectedSound);
+			}
+		}
+	}
+
+	// start next
+	HAL_ADC_Start(&hadc2);
+}
+
+/**
  * Call this function every 100ms from main
  *
  */
 void PLAYER_Task100ms()
 {
+	PLAYER_SelectSoundSwitch();
+
 	player_bButton = HAL_GPIO_ReadPin(USER_Btn_GPIO_Port,USER_Btn_Pin);
 
 	player_bButtonClick = player_bButton && !player_bButtonOld;
@@ -194,7 +243,7 @@ void PLAYER_Task100ms()
 		{
 			BASS_StartCalib();
 		}
-		else if (!player_bPlaying)
+		else if (!player_iPlaying)
 		{
 			PLAYER_Start();
 		}

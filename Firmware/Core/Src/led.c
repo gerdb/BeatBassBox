@@ -24,6 +24,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "led.h"
 #include "bass.h"
+#include "song.h"
 
 /* Variables -----------------------------------------------------------------*/
 int led_iWobbleCntPrescaler = 0;
@@ -112,6 +113,7 @@ void LED_Task1ms()
 
 	int bWobble=0;
 	static int bError=0;
+	LED_Colorype_e eColor;
 
     // Count up and down between 0 and 100
 	led_iWobbleCntPrescaler ++;
@@ -171,16 +173,31 @@ void LED_Task1ms()
 	{
 		LED_ColorM(LED_C_RED, bError);
 	}
-	// Waiting for reference run
-	else if (!BASS_IsCalibrated())
-	{
-		LED_ColorM(LED_C_GREEN, bWobble);
-	}
 	else
 	{
-		// default is green
-		LED_Color(LED_C_GREEN);
+		// green: song is loaded, blue: no valid song
+		if (SONG_Loaded())
+		{
+			eColor = LED_C_GREEN;
+		}
+		else
+		{
+			eColor = LED_C_BLUE;
+		}
+
+		// Waiting for reference run
+		if (!BASS_IsCalibrated())
+		{
+			LED_ColorM(eColor, bWobble);
+		}
+		else
+		{
+			// default is permanent
+			LED_Color(eColor);
+		}
+
 	}
+
 }
 
 /**

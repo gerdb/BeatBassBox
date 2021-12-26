@@ -55,6 +55,14 @@ int USBSTICK_PluggedInEvent(void)
 }
 
 /**
+ * Getter for mounted USB stick
+ */
+int USBSTICK_IsAvailable(void)
+{
+	return ustick_bMounted;
+}
+
+/**
  * Callback function: An USB stick was connected
  */
 void USBSTICK_Connected(void)

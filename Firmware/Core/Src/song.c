@@ -107,12 +107,12 @@ void SONG_Task1ms()
 
 	bUSBPluggedIn = USBSTICK_PluggedInEvent();
 
-	// Is the seleced song loaded, we do nothing
+	// Is the selected song loaded, we do nothing
 	if (!song_bSongLoaded)
 	{
 		// Someone wants a new song
 		if ((song_bSelectedChanged || bUSBPluggedIn)
-				&& ustick_bMounted)
+				&& ustick_bMounted && song_iSongSelected>0)
 		{
 			song_bSelectedChanged = 0;
 			song_iSongLoaded = -1;

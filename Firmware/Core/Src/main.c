@@ -115,6 +115,7 @@ int main(void)
   MX_SPI2_Init();
   MX_FATFS_Init();
   MX_USB_HOST_Init();
+  MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
   LED_Init();
   ERRORHANDLER_Init();
