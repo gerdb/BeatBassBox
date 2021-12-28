@@ -24,7 +24,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "tmc5160.h"
 #include "spi.h"
-#include "printf.h"
 #include "console.h"
 #include "errorhandler.h"
 #include <stdlib.h>
@@ -84,14 +83,12 @@ void TMC5160_Init()
 	u8Version = TMC5160_ReadData(TMC5160_IOIN)>>24;
 	if (u8Version == 0x30)
 	{
-		PRINTF_printf("TMC5160 found with version: 0x%02x.", u8Version);
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("TMC5160 found with version: 0x%02x.", u8Version);
 	}
 	else
 	{
 		ERRORHANDLER_SetError(ERROR_TMC5160);
-		PRINTF_printf("TMC5160 not found. Version value: 0x%02x. Is it powered?", u8Version);
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("TMC5160 not found. Version value: 0x%02x. Is it powered?", u8Version);
 	}
 
 	unGconf.multistep_filt = 1;
@@ -373,8 +370,7 @@ int TMC5160_IsReferencing()
 void TMC5160_PrintPos()
 {
 	CONSOLE_NewLine();
-	PRINTF_printf("Position: %d",tmc_iPosition);
-	CONSOLE_NewLine();
+	CONSOLE_PrintfLn("Position: %d",tmc_iPosition);
 }
 
 
@@ -415,8 +411,7 @@ void TMC5160_Read(uint8_t u8Addr)
  */
 static void TMC5160_ReadAllNext(uint8_t u8Addr)
 {
-	PRINTF_printf("0x%02x: 0x%8x",tmc_u8LastReadAllAddr, TMC5160_ReadData(u8Addr));
-	CONSOLE_NewLine();
+	CONSOLE_PrintfLn("0x%02x: 0x%8x",tmc_u8LastReadAllAddr, TMC5160_ReadData(u8Addr));
 	tmc_u8LastReadAllAddr = u8Addr;
 }
 /**

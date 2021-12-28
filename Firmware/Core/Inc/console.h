@@ -41,10 +41,10 @@
 /* Function prototypes -------------------------------------------------------*/
 void CONSOLE_Init(void);
 void CONSOLE_NewChar(char c);
-void CONSOLE_Print(char* text);
-void CONSOLE_PrintPrompt(char* text);
-void CONSOLE_PrintLn(char* text);
 void CONSOLE_NewLine(void);
 void CONSOLE_Prompt(void);
+int CONSOLE_Printf(const char *format, ...);
+int CONSOLE_PrintfLn(const char *format, ...);
+int CONSOLE_PrintfPrompt(const char *format, ...);
 
 #endif /* __CONSOLE_H__ */

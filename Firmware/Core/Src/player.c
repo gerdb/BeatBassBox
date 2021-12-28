@@ -20,7 +20,6 @@
  *
  */
 /* Includes ------------------------------------------------------------------*/
-#include "printf.h"
 #include "console.h"
 #include "bass.h"
 #include "song.h"
@@ -107,7 +106,7 @@ void PLAYER_Start()
 {
 	if (SONG_Loaded())
 	{
-		PRINTF_printf("Start %s", song_sTitle);
+		CONSOLE_Printf("Start %s", song_sTitle);
 		CONSOLE_Prompt();
 		BASS_MoveTo(SONG_GetFirstBassNote());
 		player_iPeriod = SONG_GetPeriod();
@@ -127,7 +126,7 @@ void PLAYER_Start()
 void PLAYER_Stop()
 {
 	player_iPlaying = 0;
-	PRINTF_printf("Stop");
+	CONSOLE_Printf("Stop");
 	CONSOLE_Prompt();
 	TMC5160_MoveTo(TMC_POS_HOME);
 }

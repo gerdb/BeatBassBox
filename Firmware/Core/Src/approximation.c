@@ -20,7 +20,6 @@
  *
  */
 /* Includes ------------------------------------------------------------------*/
-#include "printf.h"
 #include "console.h"
 #include "approximation.h"
 #include "errorhandler.h"

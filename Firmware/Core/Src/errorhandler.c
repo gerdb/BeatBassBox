@@ -51,7 +51,7 @@ void ERRORHANDLER_Init()
 void ERRORHANDLER_SetErrorText(char* text, int iErrId)
 {
 	ERRORHANDLER_SetError(iErrId);
-	CONSOLE_PrintPrompt(text);
+	CONSOLE_PrintfPrompt(text);
 }
 /**
  * Sets an error with error text and id

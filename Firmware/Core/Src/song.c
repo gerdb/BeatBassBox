@@ -22,7 +22,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdio.h>
 #include "fatfs.h"
-#include "printf.h"
 #include "console.h"
 #include "usbstick.h"
 #include "errorhandler.h"
@@ -339,8 +338,7 @@ SONG_Token_s SONG_GetNext()
 			}
 			else
 			{
-				PRINTF_printf("Error reading a jump token");
-				CONSOLE_Prompt();
+				CONSOLE_PrintfPrompt("Error reading a jump token");
 			}
 
 			// it was a jump, so we get the next token again
@@ -365,16 +363,14 @@ static int SONG_DecodeVersion(char* sLine)
 {
 	if (strncmp(sLine, "BBB:", 4) != 0)
 	{
-		PRINTF_printf("BBB file must start with \"BBB:\"");
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("BBB file must start with \"BBB:\"");
 		return 1;
 	}
 
 	song_iBBBFileVersion = sLine[4] - '0';
 	if (song_iBBBFileVersion != 1)
 	{
-		PRINTF_printf("Wrong BBB file version. Must be 1 is:%d", song_iBBBFileVersion);
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("Wrong BBB file version. Must be 1 is:%d", song_iBBBFileVersion);
 		return 1;
 	}
 	return 0;
@@ -390,8 +386,7 @@ static int SONG_DecodeTitle(char* sLine)
 {
 	if (strncmp(sLine, "TITLE:", 6) != 0)
 	{
-		PRINTF_printf("2. line must contain title");
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("2. line must contain title");
 		return 1;
 	}
 
@@ -411,8 +406,7 @@ static int SONG_DecodeTempo(char* sLine)
 {
 	if (strncmp(sLine, "TEMPO:", 6) != 0)
 	{
-		PRINTF_printf("2. line must contain the song tempo");
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("2. line must contain the song tempo");
 		return 1;
 	}
 
@@ -425,8 +419,7 @@ static int SONG_DecodeTempo(char* sLine)
 
 	if (song_iTempo < 30 || song_iTempo > 200)
 	{
-		PRINTF_printf("Song tempo must be in the range of 30..200bpm");
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("Song tempo must be in the range of 30..200bpm");
 		return 1;
 	}
 	return 0;
@@ -442,8 +435,7 @@ static int SONG_DecodeStart(char* sLine)
 {
 	if (strncmp(sLine, "START", 5) != 0)
 	{
-		PRINTF_printf("Line 4 of BBB file must be \"START:\"");
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("Line 4 of BBB file must be \"START:\"");
 		return 1;
 	}
 
@@ -483,8 +475,7 @@ static int SONG_GetNumber(char* s, int pos, int len)
 		else
 		{
 		    // BBB file not found
-			PRINTF_printf("Invalid character at position %d of %s", (pos+i), s);
-			CONSOLE_Prompt();
+			CONSOLE_PrintfPrompt("Invalid character at position %d of %s", (pos+i), s);
 		}
 	}
 	return val;
@@ -498,8 +489,7 @@ static int SONG_GetNumber(char* s, int pos, int len)
  */
 static int SONG_DecodeError(char* sErrorText)
 {
-	PRINTF_printf(sErrorText);
-	CONSOLE_Prompt();
+	CONSOLE_PrintfPrompt(sErrorText);
 	return -1;
 }
 
@@ -515,8 +505,7 @@ static int SONG_DecodeCheckSign(char* sLine, int pos, char c)
 {
 	if (sLine[pos] != c)
 	{
-		PRINTF_printf("There must be a '%c' at position %d",c , pos);
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("There must be a '%c' at position %d",c , pos);
 		return -1;
 	}
 	return 0;
@@ -886,8 +875,7 @@ static int SONG_Load(int iSong)
 	{
 	    // BBB file not found
 		ERRORHANDLER_SetError(ERROR_IN_BBB_FILE);
-		PRINTF_printf("File %d.BBB not found", iSong);
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("File %d.BBB not found", iSong);
 		// File not found
 		return 1;
 	}
@@ -896,8 +884,7 @@ static int SONG_Load(int iSong)
 	if (error)
 	{
 		ERRORHANDLER_SetError(ERROR_IN_BBB_FILE);
-		PRINTF_printf("Error in *.BBB file in line %d", lineNr);
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("Error in *.BBB file in line %d", lineNr);
 		// File not found
 		return 1;
 	}
@@ -906,8 +893,7 @@ static int SONG_Load(int iSong)
 
 	SONG_AddEnd();
 
-	PRINTF_printf("File %s loaded successfully", sFilename);
-	CONSOLE_Prompt();
+	CONSOLE_PrintfPrompt("File %s loaded successfully", sFilename);
 
 	// File successfully loaded
 	return 0;

@@ -23,7 +23,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "frqdetect.h"
-#include "printf.h"
 #include "tim.h"
 #include "adc.h"
 #include "dac.h"
@@ -229,18 +228,18 @@ void FRQDETECT_SetMaxFrq(int iFrq)
  */
 void FRQDETECT_PrintFilter()
 {
-	PRINTF_printf("%d(Hz), %d(%%), %d",
+	CONSOLE_Printf("%d(Hz), %d(%%), %d",
 			(int)(frqd_fFiltF * FRQD_FOVER2PI),
 			(int)(frqd_fFiltD * 100.0f),
 			frqd_iFiltIsBp
 			);
 	if (frqd_iFiltIsBp)
 	{
-		PRINTF_printf("(Bandpass)\r\n");
+		CONSOLE_PrintfLn("(Bandpass)");
 	}
 	else
 	{
-		PRINTF_printf("(Lowpass)\r\n");
+		CONSOLE_PrintfLn("(Lowpass)\r\n");
 
 	}
 }
@@ -250,7 +249,7 @@ void FRQDETECT_PrintFilter()
  */
 void FRQDETECT_PrintDetection()
 {
-	PRINTF_printf("%d(mV), %d(%%), %d(ms)\r\n",
+	CONSOLE_PrintfLn("%d(mV), %d(%%), %d(ms)",
 			(int)(frqd_iMinAmpl * 3000.0f / 4096.0f),
 			(int)(frqd_fEnvThresh * 100.0f),
 			(int)(1000.0f / FRQD_SAMPLE_FRQ / frqd_fEnvDecay)
@@ -263,7 +262,7 @@ void FRQDETECT_PrintDetection()
  */
 void FRQDETECT_PrintMaxFrq()
 {
-	PRINTF_printf(".. %dHz\r\n",
+	CONSOLE_PrintfLn(".. %dHz",
 			frqd_iMaxFrq
 			);
 }
@@ -421,7 +420,7 @@ void FRQDETECT_Task100ms()
 	{
 		if (FRQDETECT_IsValid())
 		{
-			PRINTF_printf("%dHz %d\r\n",(int)FRQDETECT_GetFrequency(),(100 * frqd_iAmplMax)/4096);
+			CONSOLE_PrintfLn("%dHz %d",(int)FRQDETECT_GetFrequency(),(100 * frqd_iAmplMax)/4096);
 			frqd_iAmplMax = 0;
 		}
 	}

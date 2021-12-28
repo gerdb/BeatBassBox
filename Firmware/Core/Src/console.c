@@ -53,8 +53,8 @@ void CONSOLE_Init(void)
 	CONSOLE_NewLine();
 	CONSOLE_NewLine();
 	CONSOLE_NewLine();
-	CONSOLE_PrintLn("BeatBassBox v0.1");
-	CONSOLE_PrintLn("Type HELP for help");
+	CONSOLE_PrintfLn("BeatBassBox v0.1");
+	CONSOLE_PrintfLn("Type HELP for help");
 	CONSOLE_Prompt();
 }
 
@@ -88,28 +88,28 @@ static int CONSOLE_ProcessCmd(void)
 	if (CONSOLE_IsCmd("HELP"))
 	{
 		CONSOLE_NewLine();
-		CONSOLE_PrintLn("SERVO.SET [servo_nr] [value]   Set a servo to a value");
-		CONSOLE_PrintLn("HAMMER.DRUM                    Drum with actual parameters");
-		CONSOLE_PrintLn("HAMMER.DRUMCORR                Set positions dependent parameter and drums");
-		CONSOLE_PrintLn("HAMMER.PAR                     Show the hammer parameters");
-		CONSOLE_PrintLn("HAMMER.PAR [par] [value]       Set a parameter to a value");
-		CONSOLE_PrintLn("HAMMER.PARD ...                Same, but also drums");
-		CONSOLE_PrintLn("TMC.READ                       Read all parameters of the TMC controller");
-		CONSOLE_PrintLn("TMC.READ [par]                 Read one parameters of the TMC controller");
-		CONSOLE_PrintLn("TMC.WRITE [par] [value]        Write one parameters to the TMC controller");
-		CONSOLE_PrintLn("TMC.POS                        Reads the position");
-		CONSOLE_PrintLn("TMC.POS [pos]                  Move to a position");
-		CONSOLE_PrintLn("TMC.REF                        Start a reference move");
-		CONSOLE_PrintLn("FRQD.DEBUG [0/1]               Switch on/off debug mode");
-		CONSOLE_PrintLn("FRQD.FILTER                    Read filter parameters");
-		CONSOLE_PrintLn("FRQD.FILTER [p0] [p1] [p2]     Set 3 filter parameters");
-		CONSOLE_PrintLn("FRQD.DETECTION                 Show detection parameters");
-		CONSOLE_PrintLn("FRQD.DETECTION [p0] [p1] [p2]  Set 3 detection parameters");
-		CONSOLE_PrintLn("FRQD.MAXFRQ                    Show the max frequency");
-		CONSOLE_PrintLn("FRQD.MAXFRQ [frq]              Set the max frequency");
-		CONSOLE_PrintLn("FRQD.START                     Starts a frequency detection run");
-		CONSOLE_PrintLn("BASS.CALIB                     Starts calibration run");
-		CONSOLE_PrintLn("BASS.TEST [value]              Plays one bass note get the freq.");
+		CONSOLE_PrintfLn("SERVO.SET [servo_nr] [value]   Set a servo to a value");
+		CONSOLE_PrintfLn("HAMMER.DRUM                    Drum with actual parameters");
+		CONSOLE_PrintfLn("HAMMER.DRUMCORR                Set positions dependent parameter and drums");
+		CONSOLE_PrintfLn("HAMMER.PAR                     Show the hammer parameters");
+		CONSOLE_PrintfLn("HAMMER.PAR [par] [value]       Set a parameter to a value");
+		CONSOLE_PrintfLn("HAMMER.PARD ...                Same, but also drums");
+		CONSOLE_PrintfLn("TMC.READ                       Read all parameters of the TMC controller");
+		CONSOLE_PrintfLn("TMC.READ [par]                 Read one parameters of the TMC controller");
+		CONSOLE_PrintfLn("TMC.WRITE [par] [value]        Write one parameters to the TMC controller");
+		CONSOLE_PrintfLn("TMC.POS                        Reads the position");
+		CONSOLE_PrintfLn("TMC.POS [pos]                  Move to a position");
+		CONSOLE_PrintfLn("TMC.REF                        Start a reference move");
+		CONSOLE_PrintfLn("FRQD.DEBUG [0/1]               Switch on/off debug mode");
+		CONSOLE_PrintfLn("FRQD.FILTER                    Read filter parameters");
+		CONSOLE_PrintfLn("FRQD.FILTER [p0] [p1] [p2]     Set 3 filter parameters");
+		CONSOLE_PrintfLn("FRQD.DETECTION                 Show detection parameters");
+		CONSOLE_PrintfLn("FRQD.DETECTION [p0] [p1] [p2]  Set 3 detection parameters");
+		CONSOLE_PrintfLn("FRQD.MAXFRQ                    Show the max frequency");
+		CONSOLE_PrintfLn("FRQD.MAXFRQ [frq]              Set the max frequency");
+		CONSOLE_PrintfLn("FRQD.START                     Starts a frequency detection run");
+		CONSOLE_PrintfLn("BASS.CALIB                     Starts calibration run");
+		CONSOLE_PrintfLn("BASS.TEST [value]              Plays one bass note get the freq.");
 	}
 	else if (CONSOLE_IsCmd("SERVO.SET"))
 	{
@@ -458,7 +458,7 @@ static void CONSOLE_ProcessLine(void)
 		iError = CONSOLE_ERROR_CMD;
 	}
 
-	PRINTF_printf(" ");
+	CONSOLE_Printf(" ");
 	if (iError == CONSOLE_NO_ERROR)
 	{
 		iError = CONSOLE_ProcessCmd();
@@ -468,57 +468,63 @@ static void CONSOLE_ProcessLine(void)
 		}
 		else if (iError == CONSOLE_ERROR_PAR_COUNT)
 		{
-			PRINTF_printf("Wrong amount of parameters");
+			CONSOLE_Printf("Wrong amount of parameters");
 		}
 		else
 		{
-			PRINTF_printf("Unknown command");
+			CONSOLE_Printf("Unknown command");
 		}
 
 	}
 	else if (iError == CONSOLE_ERROR_CMD)
 	{
-		PRINTF_printf("Error in command");
+		CONSOLE_Printf("Error in command");
 	}
 	else if (iError == CONSOLE_ERROR_TO_MANY_PARS)
 	{
-		PRINTF_printf("Too many parameters");
+		CONSOLE_Printf("Too many parameters");
 	}
 	else if (iError == CONSOLE_ERROR_PAR)
 	{
-		PRINTF_printf("Error in parameter");
+		CONSOLE_Printf("Error in parameter");
 	}
 	CONSOLE_Prompt();
 
 }
 
 /**
- * Prints a text with new line
+ * printf on console
  *
  */
-void CONSOLE_Print(char* text)
+int CONSOLE_Printf(const char *format, ...)
 {
-	PRINTF_printf(text);
+	register int *varg = (int*) (&format);
+	return PRINTF_printf(format, varg);
 }
 
 /**
- * Writes an (error) text
+ * printf on console
  *
  */
-void CONSOLE_PrintPrompt(char* text)
+int CONSOLE_PrintfPrompt(const char *format, ...)
 {
-	CONSOLE_Print(text);
+	int r;
+	register int *varg = (int*) (&format);
+	r = PRINTF_printf(format, varg);
 	CONSOLE_Prompt();
+	return r;
 }
-
 /**
- * Prints a text with new line
+ * printf on console
  *
  */
-void CONSOLE_PrintLn(char* text)
+int CONSOLE_PrintfLn(const char *format, ...)
 {
-	CONSOLE_Print(text);
+	int r;
+	register int *varg = (int*) (&format);
+	r = PRINTF_printf(format, varg);
 	CONSOLE_NewLine();
+	return r;
 }
 
 
@@ -532,14 +538,12 @@ void CONSOLE_NewLine(void)
 	COM_PutByte('\n');
 }
 
-
 /**
  * Prepares a new new line
  *
  */
 void CONSOLE_Prompt(void)
 {
-
 	for (int i = 0; i < CONSOLE_PARAMETERS; i++)
 	{
 		console_as32Pars[i] = 0;

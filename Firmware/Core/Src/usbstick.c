@@ -24,7 +24,6 @@
 #include "fatfs.h"
 #include "usb_host.h"
 #include "usbstick.h"
-#include "printf.h"
 #include "console.h"
 #include "errorhandler.h"
 
@@ -71,8 +70,7 @@ void USBSTICK_Connected(void)
 	if (f_mount(&USBHFatFS, (TCHAR const*) USBHPath, 0) == FR_OK)
 	{
 		ustick_bMounted = 1;
-		PRINTF_printf("USB stick connected");
-		CONSOLE_Prompt();
+		CONSOLE_PrintfPrompt("USB stick connected");
 	}
 }
 
@@ -82,6 +80,5 @@ void USBSTICK_Connected(void)
 void USBSTICK_Disconnected(void)
 {
 	ustick_bMounted = 0;
-	PRINTF_printf("USB stick removed");
-	CONSOLE_Prompt();
+	CONSOLE_PrintfPrompt("USB stick removed");
 }

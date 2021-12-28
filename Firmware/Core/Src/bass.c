@@ -93,8 +93,8 @@ void BASS_Task1ms()
 		if (bass_iMeasFrqCnt == 0)
 		{
 			float fFrq = FRQDETECT_GetMeanFrequency();
-			PRINTF_printf("frq: %d.%03dHz\r\n", (int)fFrq,(int)((fFrq-(int)fFrq)*1000) );
-			PRINTF_printf("diff: %dcent\r\n", (int)(100.0f*((fFrq/bass_fFrq-1.0f)/0.05946309f)));
+			CONSOLE_PrintfLn("frq: %d.%03dHz", (int)fFrq,(int)((fFrq-(int)fFrq)*1000) );
+			CONSOLE_PrintfLn("diff: %dcent", (int)(100.0f*((fFrq/bass_fFrq-1.0f)/0.05946309f)));
 		}
 	}
 
@@ -136,7 +136,7 @@ void BASS_Task1ms()
 			bass_fFrq = FRQDETECT_GetMeanFrequency();
 			if (bass_fFrq > 16.0f)
 			{
-				PRINTF_printf("Frequency: %dHz\r\n",
+				CONSOLE_PrintfLn("Frequency: %dHz",
 							(int)(bass_fFrq)
 							);
 				bass_eCalib = CALIB_SINGLE;
@@ -181,7 +181,7 @@ void BASS_Task1ms()
 			if (bass_fFrq > 16.0f)
 			{
 				APPROX_Point(bass_iCalibPos, bass_fFrq);
-				PRINTF_printf("%d,%d\r\n",
+				CONSOLE_PrintfLn("%d,%d",
 							bass_iCalibPos,
 							(int)(bass_fFrq)
 							);
@@ -201,7 +201,7 @@ void BASS_Task1ms()
 		FRQDETECT_SetFilter(500, 50, 0);
 		FRQDETECT_SetMaxFrq(500);
 		TMC5160_MoveTo(TMC_POS_HOME);
-		CONSOLE_PrintPrompt("Calibration successful");
+		CONSOLE_PrintfPrompt("Calibration successful");
 		bass_bIsCalibrated = 1;
 		bass_eCalib = CALIB_NO;
 		break;
@@ -247,7 +247,7 @@ int BASS_MoveTo(int iNote)
 		}
 		else
 		{
-			PRINTF_printf("Position out of range");
+			CONSOLE_Printf("Position out of range");
 		}
 	}
 	return 0;
@@ -260,7 +260,7 @@ int BASS_MoveTo(int iNote)
  */
 void BASS_Play(int iNote, int bIsArticulated)
 {
-	PRINTF_printf("%d ", iNote);
+	CONSOLE_Printf("%d ", iNote);
 	if (BASS_MoveTo(iNote))
 	{
 		//HAMMER_DrumCorrected();
@@ -275,9 +275,9 @@ void BASS_Play(int iNote, int bIsArticulated)
 void BASS_Test(int iNote)
 {
 	bass_fFrq = bass_fNoteFrqs[iNote];
-	PRINTF_printf("frq: %d.%03dHz\r\n", (int)bass_fFrq,(int)((bass_fFrq-(int)bass_fFrq)*1000) );
+	CONSOLE_PrintfLn("frq: %d.%03dHz", (int)bass_fFrq,(int)((bass_fFrq-(int)bass_fFrq)*1000) );
 	int iPos = APPROX_Calc(bass_fFrq);
-	PRINTF_printf("pos: %d\r\n", iPos );
+	CONSOLE_PrintfLn("pos: %d", iPos );
 	FRQDETECT_SetFilter((int)bass_fFrq, 50, 1);
 	FRQDETECT_SetMaxFrq((int)(bass_fFrq*1.5f));
 	FRQDETECT_Start();

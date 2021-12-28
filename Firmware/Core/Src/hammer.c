@@ -20,7 +20,6 @@
  *
  */
 /* Includes ------------------------------------------------------------------*/
-#include "printf.h"
 #include "console.h"
 #include "tmc5160.h"
 #include "hammer.h"
@@ -141,9 +140,9 @@ void HAMMER_DrumCorrected(int iArticulation)
  */
 void HAMMER_ParGet()
 {
-	PRINTF_printf("0 (ham_iDuration1): %d", ham_iDuration1);
-	PRINTF_printf("\r\n1 (ham_iTime2):     %d", ham_iTime2);
-	PRINTF_printf("\r\n2 (ham_iDuration2): %d", ham_iDuration2);
+	CONSOLE_Printf("0 (ham_iDuration1): %d", ham_iDuration1);
+	CONSOLE_Printf("\r\n1 (ham_iTime2):     %d", ham_iTime2);
+	CONSOLE_Printf("\r\n2 (ham_iDuration2): %d", ham_iDuration2);
 }
 /**
  * Set Drum parameters
