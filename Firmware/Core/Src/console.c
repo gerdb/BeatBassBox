@@ -137,7 +137,7 @@ static int CONSOLE_ProcessCmd(void)
 	{
 		if (console_iPars == 0)
 		{
-			HAMMER_DrumCorrected();
+			HAMMER_DrumCorrected(0);
 		}
 		else
 		{

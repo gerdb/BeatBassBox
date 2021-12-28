@@ -42,6 +42,8 @@
 #include "console.h"
 #include "errorhandler.h"
 #include "led.h"
+#include "delayline.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -128,6 +130,7 @@ int main(void)
   SONG_Init();
   PLAYER_Init();
   APPROX_Init();
+  DELAYLINE_Init();
 
   /* USER CODE END 2 */
 
@@ -146,7 +149,7 @@ int main(void)
   		  SONG_Task1ms();
   		  PLAYER_Task1ms();
   		  LED_Task1ms();
-
+  		  DELAYLINE_Task1ms();
 
 	  	  // 10ms Tasks. Use values of 0..8 (9 is for 100ms tasks)
 	  	  if (iCntTask10ms == 1)

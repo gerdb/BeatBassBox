@@ -95,7 +95,7 @@ void HAMMER_DrumRaw(void)
  * One hammer beat
  *
  */
-void HAMMER_DrumCorrected(void)
+void HAMMER_DrumCorrected(int iArticulation)
 {
 	int iPos = TMC5160_GetPos();
 

@@ -1,10 +1,9 @@
 /*
-
  *  Project:      BeatBassBox
- *  File:         hammer.h
+ *  File:         delayline.h
  *  Author:       Gerd Bartelt - www.sebulli.com
  *
- *  Description:  header file for hammer.c
+ *  Description:  header file for delayline.c
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,24 +19,37 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef __HAMMER_H__
-#define __HAMMER_H__
+#ifndef __DELAYLINE_H__
+#define __DELAYLINE_H__
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 /* Defines -------------------------------------------------------------------*/
 
+/* Types ---------------------------------------------------------------------*/
+
+// One entry of the delayline for the TMC5160_MoveTo command
+typedef __PACKED_STRUCT
+{
+	uint16_t u16TimeStamp;
+	uint16_t u16Position;
+} DELAYLINE_MoveTo_s;
+
+// One entry of the delayline for the DrumCorrected command
+typedef __PACKED_STRUCT
+{
+	uint16_t u16TimeStamp;
+	uint16_t u16Articulation;
+} DELAYLINE_DrumCorrected_s;
+
 /* Global variables ----------------------------------------------------------*/
 
 
 /* Function prototypes -------------------------------------------------------*/
-void HAMMER_Init();
-void HAMMER_Task1ms();
-int HAMMER_CalcDelay(int iArmPos);
-void HAMMER_DrumCorrected(int iArticulation);
-void HAMMER_DrumRaw(void);
-void HAMMER_ParSet(int iParameter, int iVal);
-void HAMMER_ParGet();
+void DELAYLINE_Init();
+void DELAYLINE_Task1ms();
+void DELAYLINE_TMC5160_MoveTo(int iDelay_ms, int32_t s32Position);
+void DELAYLINE_HAMMER_DrumCorrected(int iDelay_ms, int iArticulation);
 
-#endif /* __HAMMER_H__ */
+#endif /* __DELAYLINE_H__ */

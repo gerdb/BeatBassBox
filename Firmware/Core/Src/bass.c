@@ -20,7 +20,6 @@
  *
  */
 /* Includes ------------------------------------------------------------------*/
-#include "printf.h"
 #include "console.h"
 #include "tmc5160.h"
 #include "hammer.h"
@@ -30,6 +29,7 @@
 #include "bass.h"
 #include "errorhandler.h"
 #include <math.h>
+#include "delayline.h"
 
 /* Variables -----------------------------------------------------------------*/
 BASS_Calib_e bass_eCalib;
@@ -125,7 +125,7 @@ void BASS_Task1ms()
 			FRQDETECT_SetFilter(500, 50, 0);
 			FRQDETECT_SetMaxFrq(500);
 			FRQDETECT_Start();
-			HAMMER_DrumCorrected();
+			HAMMER_DrumCorrected(0);
 			bass_eCalib = CALIB_WAIT_FIRST;
 		}
 		break;
@@ -169,7 +169,7 @@ void BASS_Task1ms()
 			FRQDETECT_SetFilter((int)bass_fFrq, 50, 1);
 			FRQDETECT_SetMaxFrq((int)(bass_fFrq*1.5f));
 			FRQDETECT_Start();
-			HAMMER_DrumCorrected();
+			HAMMER_DrumCorrected(0);
 			bass_eCalib = CALIB_SINGLE_WAIT;
 		}
 		break;
@@ -241,7 +241,8 @@ int BASS_MoveTo(int iNote)
 		if (iPos > TMC_POS_MIN &&  iPos < TMC_POS_MAX)
 		{
 			//PRINTF_printf("%d ", iNote);
-			TMC5160_MoveTo(iPos);
+			//TMC5160_MoveTo(iPos);
+			DELAYLINE_TMC5160_MoveTo(0,iPos);
 			return 1;
 		}
 		else
@@ -262,7 +263,8 @@ void BASS_Play(int iNote, int bIsArticulated)
 	PRINTF_printf("%d ", iNote);
 	if (BASS_MoveTo(iNote))
 	{
-		HAMMER_DrumCorrected();
+		//HAMMER_DrumCorrected();
+		DELAYLINE_HAMMER_DrumCorrected(0, bIsArticulated);
 	}
 }
 
@@ -283,6 +285,6 @@ void BASS_Test(int iNote)
 
 	if (BASS_MoveTo(iNote))
 	{
-		HAMMER_DrumCorrected();
+		HAMMER_DrumCorrected(0);
 	}
 }
