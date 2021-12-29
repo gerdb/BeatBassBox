@@ -149,7 +149,7 @@ static int printi(char **out, int i, int b, int sg, int width, int pad,
 	return pc + prints(out, s, width, pad);
 }
 
-static int print(char **out, int *varg)
+int PRINTF_print(char **out, int *varg)
 {
 	register int width, pad;
 	register int pc = 0;
@@ -232,12 +232,12 @@ static int print(char **out, int *varg)
 int PRINTF_printf(const char *format, ...)
 {
 	register int *varg = (int*) (&format);
-	return print(0, varg);
+	return PRINTF_print(0, varg);
 }
 
 int PRINTF_sprintf(char *out, const char *format, ...)
 {
 	register int *varg = (int*) (&format);
-	return print(&out, varg);
+	return PRINTF_print(&out, varg);
 }
 

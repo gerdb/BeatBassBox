@@ -27,6 +27,8 @@
 #include "tmc5160.h"
 #include "bass.h"
 #include "hammer.h"
+#include <stdarg.h>
+
 
 /* Variables -----------------------------------------------------------------*/
 char console_acLine[CONSOLE_LINE_LENGTH];
@@ -498,8 +500,11 @@ static void CONSOLE_ProcessLine(void)
  */
 int CONSOLE_Printf(const char *format, ...)
 {
+	int r;
 	register int *varg = (int*) (&format);
-	return PRINTF_printf(format, varg);
+	r = PRINTF_print(0, varg);
+
+	return r;
 }
 
 /**
@@ -510,7 +515,8 @@ int CONSOLE_PrintfPrompt(const char *format, ...)
 {
 	int r;
 	register int *varg = (int*) (&format);
-	r = PRINTF_printf(format, varg);
+	r = PRINTF_print(0, varg);
+
 	CONSOLE_Prompt();
 	return r;
 }
@@ -522,7 +528,8 @@ int CONSOLE_PrintfLn(const char *format, ...)
 {
 	int r;
 	register int *varg = (int*) (&format);
-	r = PRINTF_printf(format, varg);
+	r = PRINTF_print(0, varg);
+
 	CONSOLE_NewLine();
 	return r;
 }

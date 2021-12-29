@@ -29,6 +29,6 @@
 /* Function prototypes -------------------------------------------------------*/
 int PRINTF_printf(const char *format, ...);
 int PRINTF_sprintf(char *out, const char *format, ...);
-
+int PRINTF_print(char **out, int *varg);
 
 #endif /* __PRINTF_H__ */

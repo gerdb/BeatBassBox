@@ -874,7 +874,7 @@ static int SONG_Load(int iSong)
 	else
 	{
 	    // BBB file not found
-		ERRORHANDLER_SetError(ERROR_IN_BBB_FILE);
+		//ERRORHANDLER_SetError(ERROR_IN_BBB_FILE);
 		CONSOLE_PrintfPrompt("File %d.BBB not found", iSong);
 		// File not found
 		return 1;
