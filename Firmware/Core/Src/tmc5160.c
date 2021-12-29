@@ -27,6 +27,7 @@
 #include "console.h"
 #include "errorhandler.h"
 #include <stdlib.h>
+#include <math.h>
 
 /* Variables -----------------------------------------------------------------*/
 TMC5160_SPI_TX_s tmc_sSpiDMATxBuff;
@@ -37,11 +38,14 @@ TMC5160_Ref_e tmc_eRefState;
 int tmc_iRefCnt;
 int tmc_iPosition=0;
 int tmc_iLastArmPos = 0;
+int tmc_iAccMaxS;
 float tmc_fVmax;
 int tmc_iVmax;
 float tmc_fAmax;
+float tmc_f2InvAmax;
 float tmc_fTVmax;
-//float tmc_fSTVmax;
+float tmc_fSTVmax;
+int tmc_iSTVmax;
 //float tmc_fT0Vmax;
 
 int tmc_iTVmax;
@@ -152,14 +156,22 @@ void TMC5160_Init()
 	// Enable driver
 	HAL_GPIO_WritePin(DRV_ENN_GPIO_Port, DRV_ENN_Pin, GPIO_PIN_RESET);
 
-	// Calculate the time where the maximum speed is reached, depending in VMAX and AMAX
-	tmc_fVmax = TMC_VMAX * 0.715255f; // TMC_VMAX / (2^24) * TMC_FCLK;
-	tmc_iVmax = tmc_fVmax / 1000; // in 1ms
+	// Calculate the maximum speed (steps per ms)
+	tmc_fVmax = TMC_VMAX * 0.715255f; // TMC_VMAX / (2^24) * TMC_FCLK; steps in 1s
+	tmc_iVmax = tmc_fVmax / 1000; // steps in 1ms
+
+	// Time where the maximum speed is reached, depending in VMAX and AMAX
 	tmc_fAmax = TMC_AMAX * 65.4836185f; // TMC_AMAX / (2^41) * TMC_FCLK * TMC_FCLK;
+	tmc_f2InvAmax = 2.0/tmc_fAmax;
 	tmc_fTVmax = tmc_fVmax / tmc_fAmax;
-	//tmc_fSTVmax = 0.5f * tmc_fAmax * tmc_fTVmax * tmc_fTVmax;
-	//tmc_fT0Vmax = tmc_fTVmax - tmc_fSTVmax / tmc_fVmax;
 	tmc_iTVmax = tmc_fTVmax * 1000; // in 1ms
+
+	// distance for acceleration to max speed s=1/2*a*t²
+	tmc_fSTVmax = 0.5f * tmc_fAmax * tmc_fTVmax * tmc_fTVmax ;
+	tmc_iSTVmax = tmc_fSTVmax;
+
+	//tmc_fT0Vmax = tmc_fTVmax - tmc_fSTVmax / tmc_fVmax;
+
 }
 
 
@@ -309,22 +321,6 @@ void TMC5160_MoveTo(int32_t s32Position)
 }
 
 
-/**
- * Calculates the moving delay depending on the way to move
- *
- * \param iNextArmPos the next arm position
- *
- * \return the delay in ms
- *
- */
-int TMC5160_CalcDelay(int iNextArmPos)
-{
-	int iDiff = abs(iNextArmPos - tmc_iLastArmPos);
-	// we add once the Time TVmax
-	int iTime = tmc_iTVmax + iDiff / tmc_iVmax;
-	tmc_iLastArmPos = iNextArmPos;
-	return iTime;
-}
 
 /**
  * Gets the current position
@@ -336,6 +332,44 @@ int TMC5160_CalcDelay(int iNextArmPos)
 int TMC5160_GetPos()
 {
 	return tmc_iPosition;
+}
+
+
+/**
+ * Calculates the moving delay depending on the way to move
+ *
+ * \param iDist distance to move
+ *
+ * \return the delay in ms
+ *
+ */
+int TMC5160_CalcDelay(int iDist)
+{
+	int iAbsDist;
+	int iTime;
+
+	iAbsDist = abs(iDist);
+	if (iAbsDist > tmc_iSTVmax)
+	{
+		iTime = 2*tmc_iTVmax + iAbsDist / tmc_iVmax;
+	}
+	else
+	{
+		iTime = sqrt(iAbsDist * tmc_f2InvAmax) * 1000;
+	}
+	return iTime;
+}
+
+/**
+ * Calculates the maximum delay
+ *
+ *
+ * \return the delay in ms
+ *
+ */
+int TMC5160_GetMaxDelay()
+{
+	return TMC5160_CalcDelay(TMC_POS_MAX-TMC_POS_MIN);
 }
 
 /**

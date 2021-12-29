@@ -23,6 +23,7 @@
 #include "delayline.h"
 #include "hammer.h"
 #include "tmc5160.h"
+#include "console.h"
 
 /* Variables -----------------------------------------------------------------*/
 uint16_t delayline_u16Time;
@@ -32,7 +33,7 @@ int delayline_iFifoMoveToWr;
 int delayline_iFifoDrumCorrectedWr;
 int delayline_iFifoMoveToRd;
 int delayline_iFifoDrumCorrectedRd;
-
+int delayLine_iMaxDelay;
 
 /* Local function prototypes -------------------------------------------------*/
 
@@ -51,6 +52,9 @@ void DELAYLINE_Init()
 	delayline_iFifoDrumCorrectedWr = 0;
 	delayline_iFifoMoveToRd = 0;
 	delayline_iFifoDrumCorrectedRd = 0;
+	delayLine_iMaxDelay = TMC5160_GetMaxDelay();
+	CONSOLE_PrintfPrompt("Delay for max distance: %dms", delayLine_iMaxDelay);
+
 }
 
 /**
@@ -99,7 +103,14 @@ void DELAYLINE_Task1ms()
  */
 void DELAYLINE_TMC5160_MoveTo(int iDelay_ms, int32_t s32Position)
 {
-	delayline_asFifoMoveTo[delayline_iFifoMoveToWr].u16TimeStamp = delayline_u16Time + iDelay_ms;
+	int iDelay;
+	iDelay = DELAYLINE_MAXDELAY-iDelay_ms;
+	if (iDelay<0)
+	{
+		iDelay = 0;
+	}
+
+	delayline_asFifoMoveTo[delayline_iFifoMoveToWr].u16TimeStamp = delayline_u16Time + iDelay;
 	delayline_asFifoMoveTo[delayline_iFifoMoveToWr].u16Position = (uint16_t)s32Position;
 	delayline_iFifoMoveToWr++;
 	delayline_iFifoMoveToWr &= (8-1);
@@ -111,7 +122,13 @@ void DELAYLINE_TMC5160_MoveTo(int iDelay_ms, int32_t s32Position)
  */
 void DELAYLINE_HAMMER_DrumCorrected(int iDelay_ms, int iArticulation)
 {
-	delayline_asFifoDrumCorrected[delayline_iFifoDrumCorrectedWr].u16TimeStamp = delayline_u16Time + iDelay_ms;
+	int iDelay;
+	iDelay = DELAYLINE_MAXDELAY-iDelay_ms;
+	if (iDelay<0)
+	{
+		iDelay = 0;
+	}
+	delayline_asFifoDrumCorrected[delayline_iFifoDrumCorrectedWr].u16TimeStamp = delayline_u16Time + iDelay;
 	delayline_asFifoDrumCorrected[delayline_iFifoDrumCorrectedWr].u16Articulation = (uint16_t)iArticulation;
 	delayline_iFifoDrumCorrectedWr++;
 	delayline_iFifoDrumCorrectedWr &= (8-1);

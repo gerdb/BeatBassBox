@@ -33,6 +33,7 @@
 #define FRQD_FOVER2PI (FRQD_SAMPLE_FRQ / 6.283185f)
 #define FRQD_2PIOVERF (6.283185f / FRQD_SAMPLE_FRQ)
 #define FRQD_MAXPERCNT 99999
+#define FRQD_THRESH_PULSE 200.0
 
 /* Types ---------------------------------------------------------------------*/
 
@@ -68,6 +69,7 @@ void FRQDETECT_SetMaxFrq(int iFrq);
 void FRQDETECT_PrintFilter();
 void FRQDETECT_PrintDetection();
 void FRQDETECT_PrintMaxFrq();
+int FRQDETECT_PulseDetected();
 
 
 

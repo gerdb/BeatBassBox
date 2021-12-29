@@ -26,6 +26,7 @@
 #include "tim.h"
 #include "adc.h"
 #include "dac.h"
+#include "console.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -61,6 +62,7 @@ int frqd_iPeriodsCnt;
 int frqd_iPeriodsSum;
 volatile int testa[256];
 int testacnt;
+int frqd_bPulse;
 
 
 /* Prototypes of static function ---------------------------------------------*/
@@ -159,6 +161,7 @@ void FRQDETECT_Start()
 	frqd_iLastPer = 0;
 	frqd_iPeriodsCnt = 0;
 	frqd_iPeriodsSum = 0;
+	frqd_bPulse = 0;
 	testacnt = 0;
 }
 
@@ -268,6 +271,15 @@ void FRQDETECT_PrintMaxFrq()
 }
 
 /**
+ * returns 1, of pulse was detected
+ *
+ */
+int FRQDETECT_PulseDetected()
+{
+	return frqd_bPulse;
+}
+
+/**
  * Processes on sample
  *
  * \param ui16Sample 16 (12-bit) ADC value from 0..0x0FFF
@@ -318,6 +330,12 @@ __STATIC_INLINE void FRQDETECT_Process(uint16_t ui16Sample)
 	else
 	{
 		frqd_fEnvNeg -= frqd_fEnvNeg * frqd_fEnvDecay;
+	}
+
+	if (frqd_fFiltOut > FRQD_THRESH_PULSE ||  frqd_fFiltOut < -FRQD_THRESH_PULSE )
+	{
+		// Detect first pulse to measure time between hammer and sound
+		frqd_bPulse = 1;
 	}
 
 	// Schmitt-Trigger

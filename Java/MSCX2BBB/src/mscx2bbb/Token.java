@@ -358,7 +358,7 @@ public class Token implements Comparable<Token> {
 			}
 		} else if (isTempo())
 		{
-			ret = "TP:"+tempo;
+			ret = "TP:"+String.format("%03d", tempo);
 		} else {
 			System.err.println("Token is neither bass nor beat or jump or marker");
 		}

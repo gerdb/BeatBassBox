@@ -35,11 +35,14 @@
 BASS_Calib_e bass_eCalib;
 int bass_iCalibCnt;
 int bass_iCalibPos;
+int bass_iCalibRetries;
 float bass_fFrq;
+float bass_fFrqLastValid;
 float bass_fNoteFrqs[64];
 int bass_bIsCalibrated;
 int bass_iMeasFrqCnt;
-float bass_fFrq;
+int bass_iMeasDelay;
+int bass_iPos;
 
 /* Local function prototypes -------------------------------------------------*/
 
@@ -55,6 +58,7 @@ void BASS_Init()
 	bass_eCalib = CALIB_NO;
 	bass_bIsCalibrated = 0;
 	bass_iMeasFrqCnt = 0;
+	bass_iPos = 0;
 
 	int index;
 	// Fill the notes with its frequency
@@ -136,20 +140,23 @@ void BASS_Task1ms()
 			bass_fFrq = FRQDETECT_GetMeanFrequency();
 			if (bass_fFrq > 16.0f)
 			{
+				bass_fFrqLastValid = bass_fFrq;
 				CONSOLE_PrintfLn("Frequency: %dHz",
 							(int)(bass_fFrq)
 							);
+				bass_iCalibRetries = 0;
 				bass_eCalib = CALIB_SINGLE;
 			}
 			else
 			{
-				ERRORHANDLER_SetErrorText("No propper signal", ERROR_DURING_CALIB);
+				ERRORHANDLER_SetErrorText("No proper signal", ERROR_DURING_CALIB);
 				bass_eCalib = CALIB_NO;
 			}
 		}
 		break;
 	case CALIB_SINGLE:
 		bass_iCalibCnt = 0;
+
 		if (bass_iCalibPos >= TMC_POS_CALIBMIN)
 		{
 			TMC5160_MoveTo(bass_iCalibPos);
@@ -166,32 +173,48 @@ void BASS_Task1ms()
 		if (bass_iCalibCnt > 250)
 		{
 			bass_iCalibCnt = 0;
-			FRQDETECT_SetFilter((int)bass_fFrq, 50, 1);
-			FRQDETECT_SetMaxFrq((int)(bass_fFrq*1.5f));
+			FRQDETECT_SetFilter((int)bass_fFrqLastValid, 50, 1);
+			FRQDETECT_SetMaxFrq((int)(bass_fFrqLastValid*1.5f));
 			FRQDETECT_Start();
+			bass_iMeasDelay = 0;
 			HAMMER_DrumCorrected(0);
 			bass_eCalib = CALIB_SINGLE_WAIT;
 		}
 		break;
 	case CALIB_SINGLE_WAIT:
 		bass_iCalibCnt ++;
+		if (bass_iMeasDelay == 0 && FRQDETECT_PulseDetected())
+		{
+			bass_iMeasDelay = bass_iCalibCnt;
+		}
 		if (bass_iCalibCnt > 500)
 		{
 			bass_fFrq = FRQDETECT_GetMeanFrequency();
 			if (bass_fFrq > 16.0f)
 			{
+				bass_fFrqLastValid = bass_fFrq;
 				APPROX_Point(bass_iCalibPos, bass_fFrq);
-				CONSOLE_PrintfLn("%d,%d",
+				CONSOLE_PrintfLn("%d,%d,%d",
 							bass_iCalibPos,
-							(int)(bass_fFrq)
+							(int)(bass_fFrq),
+							bass_iMeasDelay
 							);
 				bass_iCalibPos -= 200;
+				bass_iCalibRetries = 0;
 				bass_eCalib = CALIB_SINGLE;
 			}
 			else
 			{
-				ERRORHANDLER_SetErrorText("No propper signal", ERROR_DURING_CALIB);
-				bass_eCalib = CALIB_NO;
+				bass_iCalibRetries ++;
+				if (bass_iCalibRetries>5)
+				{
+					ERRORHANDLER_SetErrorText("No proper signal", ERROR_DURING_CALIB);
+					bass_eCalib = CALIB_NO;
+				}
+				else
+				{
+					bass_eCalib = CALIB_SINGLE;
+				}
 			}
 		}
 		break;
@@ -240,9 +263,10 @@ int BASS_MoveTo(int iNote)
 		int iPos = APPROX_Calc(bass_fNoteFrqs[iNote]);
 		if (iPos > TMC_POS_MIN &&  iPos < TMC_POS_MAX)
 		{
-			//PRINTF_printf("%d ", iNote);
 			//TMC5160_MoveTo(iPos);
-			DELAYLINE_TMC5160_MoveTo(0,iPos);
+			// Distance to move
+			DELAYLINE_TMC5160_MoveTo(TMC5160_CalcDelay(iPos - bass_iPos),iPos);
+			bass_iPos = iPos;
 			return 1;
 		}
 		else
@@ -264,7 +288,8 @@ void BASS_Play(int iNote, int bIsArticulated)
 	if (BASS_MoveTo(iNote))
 	{
 		//HAMMER_DrumCorrected();
-		DELAYLINE_HAMMER_DrumCorrected(0, bIsArticulated);
+		// Use a fix delay of 25ms for hammer
+		DELAYLINE_HAMMER_DrumCorrected(25, bIsArticulated);
 	}
 }
 

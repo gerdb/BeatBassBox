@@ -55,7 +55,7 @@ void CONSOLE_Init(void)
 	CONSOLE_NewLine();
 	CONSOLE_NewLine();
 	CONSOLE_NewLine();
-	CONSOLE_PrintfLn("BeatBassBox v0.1");
+	CONSOLE_PrintfLn("BeatBassBox v1.0");
 	CONSOLE_PrintfLn("Type HELP for help");
 	CONSOLE_Prompt();
 }

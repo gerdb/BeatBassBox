@@ -308,5 +308,7 @@ int TMC5160_GetPos();
 void TMC5160_PrintPos();
 void TMC5160_Ref();
 int TMC5160_IsReferencing();
+int TMC5160_CalcDelay(int iDist);
+int TMC5160_GetMaxDelay();
 
 #endif /* __TMC5160_H__ */

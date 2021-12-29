@@ -260,6 +260,27 @@ SONG_Token_s SONG_GetNext()
 					pMemory->u8Runs = 0;
 				}
 			}
+			// It's a relative repeat
+			else if (stToken.stJump.u3_JumpType == SONG_J_REPEAT_REL && bHasMemory && bHasDestination)
+				{
+					// Was it the first run, then we repeat
+					if (pMemory->u8Runs < pDestination->u10_playUntil)
+						{
+						song_iTokenIndex = pDestination->u10_jumpTo;
+					}
+					else
+					{
+						// go further
+						song_iTokenIndex ++;
+					}
+
+					// Count the repeats
+					pMemory->u8Runs ++;
+					if (pMemory->u8Runs <255)
+					{
+						pMemory->u8Runs ++;
+					}
+				}
 			// It's a "fine"
 			else if (stToken.stJump.u3_JumpType == SONG_J_FINE)
 			{
@@ -322,7 +343,6 @@ SONG_Token_s SONG_GetNext()
 					song_iTokenIndex = pDestination->u10_jumpTo;
 					song_iPlayUntil = pDestination->u10_playUntil;
 					song_iContinueAt = pDestination->u10_continueAt;
-
 				}
 
 				// Count up
@@ -348,6 +368,13 @@ SONG_Token_s SONG_GetNext()
 			}
 			stToken = song_stTokens[song_iTokenIndex];
 		}
+		// Was it a tempo token?
+		else if (stToken.stTempo.u1_isExtra && stToken.stTempo.u3_ExtraType == EXTRA_TEMPO)
+		{
+			song_iTempo = stToken.stTempo.u8_tempo;
+		}
+
+
 	} while (stToken.stJump.u1_isExtra && stToken.stJump.u3_ExtraType == EXTRA_JUMP  && iLoopLimit < 10);
 
 	return stToken;
@@ -400,29 +427,18 @@ static int SONG_DecodeTitle(char* sLine)
  * Decodes tempo
  *
  * \param sLine: the line
- * \return 0 if there is no error
+ * \return iTempo
  */
 static int SONG_DecodeTempo(char* sLine)
 {
-	if (strncmp(sLine, "TEMPO:", 6) != 0)
-	{
-		CONSOLE_PrintfPrompt("2. line must contain the song tempo");
-		return 1;
-	}
-
-	song_iTempo = 0;
+	int iTempo = 0;
 	for (int i=0;i<3;i++)
 	{
-		song_iTempo*=10;
-		song_iTempo+=sLine[6+i]-'0';
+		iTempo*=10;
+		iTempo+=sLine[8+i]-'0';
 	}
 
-	if (song_iTempo < 30 || song_iTempo > 200)
-	{
-		CONSOLE_PrintfPrompt("Song tempo must be in the range of 30..200bpm");
-		return 1;
-	}
-	return 0;
+	return iTempo;
 }
 
 /**
@@ -550,11 +566,20 @@ static int SONG_DecodeLine(char* sLine)
 	int iContinueAt;
 	int bAlFine;
 	int bWithRepeat;
+	int iRepeatRel;
+	int iRepeatLoops;
 
 	if (song_iTokenLen == 107)
 	{
 		bWithRepeat = 0;
 	}
+
+	// Decode the command
+	if (sLine[0]== 'E' && sLine[1]== 'N' && sLine[2]== 'D')
+	{
+		return 0;
+	}
+
 
 	// Get Token number
 	iTokenNr = SONG_GetNumber(sLine, 0, 3);
@@ -681,6 +706,25 @@ static int SONG_DecodeLine(char* sLine)
 		song_stTokens[song_iTokenLen].stJump.u8_jumpToMemory = song_iJMemoryLen;
 		song_iJMemoryLen ++;
 	}
+	else if (sLine[5]== '<' && sLine[7]== ':')
+	{
+		// Get relative address and loops
+		iRepeatRel = SONG_GetNumber(sLine, 8, 3);
+		iRepeatLoops = SONG_GetNumber(sLine, 12, 3);
+
+		// it was a single repeat
+		song_stTokens[song_iTokenLen].stJump.u1_isExtra = 1;
+		song_stTokens[song_iTokenLen].stJump.u3_ExtraType = EXTRA_JUMP;
+		song_stTokens[song_iTokenLen].stJump.u3_JumpType = SONG_J_REPEAT_REL;
+
+		song_stJDestinations[song_iJDestinationLen].u10_jumpTo = song_iTokenLen - iRepeatRel;
+		song_stJDestinations[song_iJDestinationLen].u10_playUntil = iRepeatLoops;
+		song_stTokens[song_iTokenLen].stJump.u8_jumpToDestinations = song_iJDestinationLen;
+		song_iJDestinationLen++;
+
+		song_stTokens[song_iTokenLen].stJump.u8_jumpToMemory = song_iJMemoryLen;
+		song_iJMemoryLen ++;
+	}
 	else if (sLine[5]== 'F' && sLine[6]== 'I')
 	{
 		// it was a fine
@@ -784,9 +828,24 @@ static int SONG_DecodeLine(char* sLine)
 		song_iJMemoryLen ++;
 
 	}
+	else if (sLine[5]== 'T' && sLine[6]== 'P')
+	{
+		// it was a tempo value
+
+		int iTempo = SONG_DecodeTempo(sLine);
+		if (iTempo < 30 || iTempo > 200)
+		{
+			return (SONG_DecodeError("Invalid tempo. Must be in the range of 030 .. 200"));
+		}
+
+		// It's a tempo token
+		song_stTokens[song_iTokenLen].stTempo.u1_isExtra = 1;
+		song_stTokens[song_iTokenLen].stTempo.u3_ExtraType = EXTRA_TEMPO;
+		song_stTokens[song_iTokenLen].stTempo.u8_tempo = iTempo;
+	}
 	else
 	{
-		return (SONG_DecodeError("Unknown command"));
+		return (SONG_DecodeError("Unknown BB command"));
 	}
 
 	song_iTokenLen++;
@@ -824,6 +883,8 @@ static int SONG_Load(int iSong)
     int error = 0;
     int lineNr = 0;
 
+    // Default tempo
+    song_iTempo = 120;
 
     // We accept only 10 songs from 0..9
     if (iSong<0 || iSong>9)
@@ -855,10 +916,6 @@ static int SONG_Load(int iSong)
 				error = SONG_DecodeTitle(sLine);
 			}
 			else if (lineNr == 3)
-			{
-				error = SONG_DecodeTempo(sLine);
-			}
-			else if (lineNr == 4)
 			{
 				error = SONG_DecodeStart(sLine);
 			}

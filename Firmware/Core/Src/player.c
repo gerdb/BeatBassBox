@@ -174,6 +174,11 @@ void PLAYER_Task1ms()
 						}
 						player_iDelayNext = 0;
 					}
+
+					if (player_stCurrentToken.stTempo.u3_ExtraType == EXTRA_TEMPO)
+					{
+						player_iPeriod = SONG_GetPeriod();
+					}
 				}
 				else
 				{
