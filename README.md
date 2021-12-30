@@ -8,8 +8,8 @@ Convert it with MSCX2BBB into a BBB file:
 
 Result is a BBB file.
 
-##Video:
+## Video:
 [![Watch the video](https://img.youtube.com/vi/u-Lo1GVVmbg/maxresdefault.jpg)](https://youtu.be/u-Lo1GVVmbg)
 
-##Project website:
-[https://www.sebulli.com/bbb/index.php](https://www.sebulli.com/bbb/index.php)
+## Project website:
+[https://www.sebulli.com/bbb/](https://www.sebulli.com/bbb/)
