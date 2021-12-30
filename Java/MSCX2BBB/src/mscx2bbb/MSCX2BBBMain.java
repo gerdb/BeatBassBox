@@ -1,12 +1,14 @@
 package mscx2bbb;
 
+import java.io.File;
+
 public class MSCX2BBBMain {
 
 	public static void main(String[] args) {
 		boolean extra = false;
 		if (args.length < 1)
 		{
-			System.out.println("[inputfilename -x(for extra information)");
+			System.out.println("[inputfilename] -x(optional for extra information)");
 			return;
 		}
 		if (args.length > 2)
@@ -30,7 +32,8 @@ public class MSCX2BBBMain {
 		MSCXImporter mscxConverter = new MSCXImporter(filename, extra);
 		mscxConverter.Import();
 		mscxConverter.Export();
-		System.out.println("Done!");
+		File f = new File(mscxConverter.outputFilename);
+		System.out.println(f.getName() + " created!");
 		
 	}
 

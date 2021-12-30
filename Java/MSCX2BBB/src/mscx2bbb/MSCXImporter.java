@@ -27,7 +27,7 @@ import mscx2bbb.Token.Token_Type;
 public class MSCXImporter implements ContentHandler {
 
 	private String inputFilename = "";
-	private String outputFilename = "";
+	public String outputFilename = "";
 	private String content = "";
 	private String textStyle = "";
 	private int staffId = 0;
