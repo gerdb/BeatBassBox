@@ -27,6 +27,7 @@
 #include "player.h"
 #include "adc.h"
 #include "errorhandler.h"
+#include "delayline.h"
 
 /* Variables -----------------------------------------------------------------*/
 int player_bButton;
@@ -43,7 +44,6 @@ SONG_Token_s player_stCurrentToken;
 
 
 /* Local function prototypes -------------------------------------------------*/
-//static void PLAYER_StatusLED();
 static void PLAYER_Start();
 static void PLAYER_Stop();
 static void PLAYER_SelectSoundSwitch();
@@ -64,38 +64,6 @@ void PLAYER_Init()
 	player_iPeriod = 100;
 	HAL_ADC_Start(&hadc2);
 }
-
-/**
- * Turn on/off the blue LED if the selected song was loaded
- *
- */
-/*
-static void PLAYER_StatusLED()
-{
-
-	player_iBlinkCnt ++;
-	// Turn on/off the blue LED
-	if (SONG_Loaded() && (!player_bPlaying || (player_iBlinkCnt & 0x0200)))
-	{
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-	}
-	else
-	{
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-	}
-
-	if (player_bPlaying && song_bHasSwitch && !song_bSwitchSet)
-	{
-		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	}
-	else
-	{
-		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-	}
-
-}
-*/
-
 
 
 /**
@@ -128,6 +96,7 @@ void PLAYER_Stop()
 	player_iPlaying = 0;
 	CONSOLE_Printf("Stop");
 	CONSOLE_Prompt();
+	DELAYLINE_Reset();
 	TMC5160_MoveTo(TMC_POS_HOME);
 }
 

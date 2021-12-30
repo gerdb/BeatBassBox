@@ -50,6 +50,7 @@ typedef __PACKED_STRUCT
 
 /* Function prototypes -------------------------------------------------------*/
 void DELAYLINE_Init();
+void DELAYLINE_Reset();
 void DELAYLINE_Task1ms();
 void DELAYLINE_TMC5160_MoveTo(int iDelay_ms, int32_t s32Position);
 void DELAYLINE_HAMMER_DrumCorrected(int iDelay_ms, int iArticulation);

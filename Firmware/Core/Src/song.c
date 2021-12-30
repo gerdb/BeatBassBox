@@ -263,6 +263,12 @@ SONG_Token_s SONG_GetNext()
 			// It's a relative repeat
 			else if (stToken.stJump.u3_JumpType == SONG_J_REPEAT_REL && bHasMemory && bHasDestination)
 				{
+					// Count the repeats
+					if (pMemory->u8Runs <255)
+					{
+						pMemory->u8Runs ++;
+					}
+
 					// Was it the first run, then we repeat
 					if (pMemory->u8Runs < pDestination->u10_playUntil)
 						{
@@ -272,13 +278,6 @@ SONG_Token_s SONG_GetNext()
 					{
 						// go further
 						song_iTokenIndex ++;
-					}
-
-					// Count the repeats
-					pMemory->u8Runs ++;
-					if (pMemory->u8Runs <255)
-					{
-						pMemory->u8Runs ++;
 					}
 				}
 			// It's a "fine"

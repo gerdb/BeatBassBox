@@ -47,16 +47,25 @@ int delayLine_iMaxDelay;
  */
 void DELAYLINE_Init()
 {
+	DELAYLINE_Reset();
+	delayLine_iMaxDelay = TMC5160_GetMaxDelay();
+	CONSOLE_PrintfPrompt("Delay for max distance: %dms", delayLine_iMaxDelay);
+}
+
+
+/**
+ * Resets the delay line
+ *
+ *
+ */
+void DELAYLINE_Reset()
+{
 	delayline_u16Time = 0;
 	delayline_iFifoMoveToWr = 0;
 	delayline_iFifoDrumCorrectedWr = 0;
 	delayline_iFifoMoveToRd = 0;
 	delayline_iFifoDrumCorrectedRd = 0;
-	delayLine_iMaxDelay = TMC5160_GetMaxDelay();
-	CONSOLE_PrintfPrompt("Delay for max distance: %dms", delayLine_iMaxDelay);
-
 }
-
 /**
  * Call this function every 1ms from main
  *
