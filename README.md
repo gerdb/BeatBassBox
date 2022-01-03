@@ -9,7 +9,7 @@ Convert it with MSCX2BBB into a BBB file:
 Result is a BBB file.
 
 ## Video:
-[![Watch the video](https://img.youtube.com/vi/u-Lo1GVVmbg/maxresdefault.jpg)](https://youtu.be/u-Lo1GVVmbg)
+[![Watch the video](https://img.youtube.com/vi/Yc4M_1rdH4E/maxresdefault.jpg)](https://youtu.be/Yc4M_1rdH4E)
 
 ## Project website:
 [https://www.sebulli.com/bbb/](https://www.sebulli.com/bbb/)
